@@ -12,6 +12,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjekatMobilne">
         <activity
+            android:name="Model.MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ProjekatMobilne" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
