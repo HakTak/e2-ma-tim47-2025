@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F9FA">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Novi Zadatak"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#2D3436"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- SEKCIJA: OSNOVNO -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Naslov zadatka"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences"
+                android:singleLine="true"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Opis (opciono)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="20dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:lines="3"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- SEKCIJA: KATEGORIJA I PRIORITET -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Kategorija" android:textStyle="bold"/>
+        <Spinner
+            android:id="@+id/spinnerCategory"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:drawable/btn_dropdown"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Težina" android:textStyle="bold"/>
+                <Spinner android:id="@+id/spinnerDifficulty" android:layout_width="match_parent" android:layout_height="50dp" android:entries="@array/difficulty_array"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bitnost" android:textStyle="bold"/>
+                <Spinner android:id="@+id/spinnerImportance" android:layout_width="match_parent" android:layout_height="50dp" android:entries="@array/importance_array"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#DFE6E9" android:layout_marginVertical="20dp"/>
+
+        <!-- SEKCIJA: UČESTALOST -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Učestalost" android:textStyle="bold"/>
+        <Spinner
+            android:id="@+id/spinnerFrequency"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:entries="@array/frequency_array"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- DINAMIČKI PANEL: Prikazuje se samo ako je ponavljajuće -->
+        <LinearLayout
+            android:id="@+id/layoutRecurringOptions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="#F1F2F6"
+            android:padding="12dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ponavljaj na svakih:" android:textSize="12sp"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <EditText
+                    android:id="@+id/etRepeatInterval"
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:hint="1"
+                    android:text="1"/>
+
+                <Spinner
+                    android:id="@+id/spinnerRepeatUnit"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:entries="@array/unit_array"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#DFE6E9" android:layout_marginVertical="20dp"/>
+
+        <!-- SEKCIJA: VREME -->
+        <Button
+            android:id="@+id/btnPickTime"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Izaberi vreme izvršenja"
+            app:icon="@android:drawable/ic_menu_my_calendar"/>
+
+        <TextView
+            android:id="@+id/tvSelectedTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nije izabrano"
+            android:textAlignment="center"
+            android:layout_marginBottom="30dp"/>
+
+        <Button
+            android:id="@+id/btnSaveTask"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="SAČUVAJ ZADATAK"
+            app:cornerRadius="12dp"
+            android:backgroundTint="#6200EE"
+            android:textSize="16sp"/>
+
+    </LinearLayout>
+</ScrollView>
