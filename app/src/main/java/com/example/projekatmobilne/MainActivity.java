@@ -87,16 +87,16 @@ public class MainActivity extends AppCompatActivity {
 
         // FIX: Koristimo FlowLayout ili precizniji GridLayout
         GridLayout colorGrid = new GridLayout(this);
-        colorGrid.setColumnCount(5);
+        colorGrid.setColumnCount(7);
         colorGrid.setAlignmentMode(GridLayout.ALIGN_BOUNDS);
 
         String[] colors = {
-                "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5",
-                "#2196F3", "#00BCD4", "#4CAF50", "#FFC107", "#FF5722"
+                "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3", "#03A9F4", // Red 1
+                "#00BCD4", "#009688", "#4CAF50", "#8BC34A", "#CDDC39", "#FFC107", "#FF5722"  // Red 2
         };
 
         // Smanjili smo veličinu na 35dp da bi sigurno stalo
-        int size = (int) (35 * getResources().getDisplayMetrics().density);
+        int size = (int) (33 * getResources().getDisplayMetrics().density);
 
         for (String color : colors) {
             View colorDot = new View(this);
