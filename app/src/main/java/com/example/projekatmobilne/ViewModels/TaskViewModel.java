@@ -35,60 +35,102 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     public void loadAllTasks() {
-        executorService.execute(() -> {
-            repository.open();
-            List<Task> all = repository.getAllTasks();
+        try {
+            executorService.execute(() -> {
+                repository.open();
+                List<Task> all = repository.getAllTasks();
+                tasksLiveData.postValue(all);
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
             repository.close();
-            tasksLiveData.postValue(all);
-        });
+        }
+
     }
 
     // =====================================================
     // Dodaj novi task
     // =====================================================
     public void insertTask(Task task) {
-        executorService.execute(() -> {
-            repository.open();
-            repository.insertTask(task);
+
+        try {
+            executorService.execute(() -> {
+                repository.open();
+                repository.insertTask(task);
+
+                loadAllTasks(); // automatski osveži listu
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
             repository.close();
-            loadAllTasks(); // automatski osveži listu
-        });
+        }
+
+
     }
 
     // =====================================================
     // Ažuriraj postojeći task
     // =====================================================
     public void updateTask(Task task) {
-        executorService.execute(() -> {
-            repository.open();
-            repository.updateTask(task);
+
+        try {
+            executorService.execute(() -> {
+                repository.open();
+                repository.updateTask(task);
+
+                loadAllTasks();
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
             repository.close();
-            loadAllTasks();
-        });
+        }
+
+
     }
 
     // =====================================================
     // Označi task kao završen
     // =====================================================
     public void markAsCompleted(long taskId) {
-        executorService.execute(() -> {
-            repository.open();
-            repository.markAsCompleted(taskId);
+
+        try {
+            executorService.execute(() -> {
+                repository.open();
+                repository.markAsCompleted(taskId);
+
+                loadAllTasks();
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
             repository.close();
-            loadAllTasks();
-        });
+        }
+
+
     }
 
     // =====================================================
     // Obriši task
     // =====================================================
     public void deleteTask(long taskId) {
-        executorService.execute(() -> {
-            repository.open();
-            repository.deleteTask(taskId);
+
+        try {
+            executorService.execute(() -> {
+                repository.open();
+                repository.deleteTask(taskId);
+
+                loadAllTasks();
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
             repository.close();
-            loadAllTasks();
-        });
+        }
+
+
     }
 
     @Override

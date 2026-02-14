@@ -1,5 +1,6 @@
 package com.example.projekatmobilne;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -14,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.projekatmobilne.Activity.TasksActivity;
 import com.example.projekatmobilne.Adapter.CategoryAdapter;
 import com.example.projekatmobilne.Model.Category;
 import com.example.projekatmobilne.ViewModels.CategoryViewModel;
@@ -34,6 +37,13 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView rv = findViewById(R.id.recyclerViewCategories);
         rv.setLayoutManager(new LinearLayoutManager(this));
         adapter = new CategoryAdapter(category -> {
+            // Običan klik -> Otvara taskove
+            Intent intent = new Intent(MainActivity.this, TasksActivity.class);
+            intent.putExtra("CATEGORY_ID", category.getId());
+            intent.putExtra("CATEGORY_NAME", category.getName());
+            startActivity(intent);
+        }, category -> {
+            // Dugi klik -> Brisanje (ono što smo već uradili)
             showDeleteConfirmationDialog(category);
         });
         rv.setAdapter(adapter);

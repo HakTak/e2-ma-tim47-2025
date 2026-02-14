@@ -56,7 +56,7 @@ public class TaskRepository {
         values.put(AppDataBaseHelper.COLUMN_CREATION_DATE, String.valueOf(System.currentTimeMillis()));
 
         long newRowId = database.insert(AppDataBaseHelper.TABLE_TASKS, null, values);
-        database.close();
+
         return newRowId;
     }
 
@@ -85,7 +85,7 @@ public class TaskRepository {
         }
 
         if (cursor != null) cursor.close();
-        database.close();
+
         return taskList;
     }
 
@@ -114,7 +114,7 @@ public class TaskRepository {
         }
 
         if (cursor != null) cursor.close();
-        database.close();
+
         return task;
     }
 
@@ -143,7 +143,7 @@ public class TaskRepository {
         String[] whereArgs = {String.valueOf(task.getId())};
 
         int rowsAffected = database.update(AppDataBaseHelper.TABLE_TASKS, values, whereClause, whereArgs);
-        database.close();
+
         return rowsAffected;
     }
 
@@ -155,7 +155,7 @@ public class TaskRepository {
         String whereClause = AppDataBaseHelper.COLUMN_TASK_ID + " = ?";
         String[] whereArgs = {String.valueOf(id)};
         int rowsDeleted = database.delete(AppDataBaseHelper.TABLE_TASKS, whereClause, whereArgs);
-        database.close();
+
         return rowsDeleted;
     }
 
@@ -171,7 +171,7 @@ public class TaskRepository {
         String[] args = {String.valueOf(id)};
 
         int rows = database.update(AppDataBaseHelper.TABLE_TASKS, values, where, args);
-        database.close();
+
         return rows;
     }
 

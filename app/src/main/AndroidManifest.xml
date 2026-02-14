@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjekatMobilne">
 
-        <!-- SAMO OVAJ BLOK TREBA DA OSTANE -->
+        <!-- 1. Glavna aktivnost (Launcher) -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -20,6 +20,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- 2. Aktivnost za prikaz taskova (Mora biti VAN MainActivity taga) -->
+        <activity
+            android:name=".Activity.TasksActivity"
+            android:exported="false"
+            android:label="Moji Zadaci"
+            android:parentActivityName=".MainActivity">
+        </activity>
+
+        <!-- 3. Aktivnost za dodavanje taska -->
+        <activity
+            android:name=".Activity.AddTaskActivity"
+            android:exported="false"
+            android:label="Novi Zadatak"
+            android:windowSoftInputMode="adjustResize">
         </activity>
 
     </application>

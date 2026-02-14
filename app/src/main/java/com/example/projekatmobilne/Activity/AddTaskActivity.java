@@ -1,0 +1,155 @@
+package com.example.projekatmobilne.Activity;
+
+import android.app.TimePickerDialog;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.example.projekatmobilne.Enum.*;
+import com.example.projekatmobilne.Model.Category;
+import com.example.projekatmobilne.Model.Task;
+import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.ViewModels.CategoryViewModel;
+import com.example.projekatmobilne.ViewModels.TaskViewModel;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+
+public class AddTaskActivity extends AppCompatActivity {
+
+    private EditText etTitle, etDescription, etRepeatInterval;
+    private Spinner spinnerCategory, spinnerDifficulty, spinnerImportance, spinnerFrequency, spinnerRepeatUnit;
+    private LinearLayout layoutRecurringOptions;
+    private TextView tvSelectedTime;
+    private Button btnPickTime, btnSaveTask;
+
+    private CategoryViewModel categoryViewModel;
+    private TaskViewModel taskViewModel;
+
+    private List<Category> allCategories = new ArrayList<>();
+    private long selectedExecutionTime = System.currentTimeMillis(); // Default je sad
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_add_task);
+
+        initViews();
+
+        categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
+        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+
+        // 1. Popuni spinner kategorijama iz baze
+        loadCategoriesIntoSpinner();
+
+        // 2. Logika za prikaz/skrivanje opcija ponavljanja
+        spinnerFrequency.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                // Pozicija 1 je "Ponavljajuće" u strings.xml
+                layoutRecurringOptions.setVisibility(pos == 1 ? View.VISIBLE : View.GONE);
+            }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+
+        // 3. Time Picker Dijalog
+        btnPickTime.setOnClickListener(v -> showTimePicker());
+
+        // 4. SAVE DUGME
+        btnSaveTask.setOnClickListener(v -> saveTask());
+    }
+
+    private void initViews() {
+        etTitle = findViewById(R.id.etTaskTitle);
+        etDescription = findViewById(R.id.etTaskDescription);
+        etRepeatInterval = findViewById(R.id.etRepeatInterval);
+        spinnerCategory = findViewById(R.id.spinnerCategory);
+        spinnerDifficulty = findViewById(R.id.spinnerDifficulty);
+        spinnerImportance = findViewById(R.id.spinnerImportance);
+        spinnerFrequency = findViewById(R.id.spinnerFrequency);
+        spinnerRepeatUnit = findViewById(R.id.spinnerRepeatUnit);
+        layoutRecurringOptions = findViewById(R.id.layoutRecurringOptions);
+        tvSelectedTime = findViewById(R.id.tvSelectedTime);
+        btnPickTime = findViewById(R.id.btnPickTime);
+        btnSaveTask = findViewById(R.id.btnSaveTask);
+    }
+
+    private void loadCategoriesIntoSpinner() {
+        categoryViewModel.getAllCategories().observe(this, categories -> {
+            if (categories != null) {
+                this.allCategories = categories;
+                List<String> categoryNames = new ArrayList<>();
+                for (Category c : categories) {
+                    categoryNames.add(c.getName());
+                }
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                        android.R.layout.simple_spinner_item, categoryNames);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerCategory.setAdapter(adapter);
+            }
+        });
+    }
+
+    private void showTimePicker() {
+        Calendar c = Calendar.getInstance();
+        new TimePickerDialog(this, (view, hour, minute) -> {
+            c.set(Calendar.HOUR_OF_DAY, hour);
+            c.set(Calendar.MINUTE, minute);
+            selectedExecutionTime = c.getTimeInMillis();
+            tvSelectedTime.setText("Izabrano: " + hour + ":" + (minute < 10 ? "0" + minute : minute));
+        }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
+    }
+
+    private void saveTask() {
+        String title = etTitle.getText().toString().trim();
+        String desc = etDescription.getText().toString().trim();
+
+        if (title.isEmpty() || allCategories.isEmpty()) {
+            Toast.makeText(this, "Naslov i kategorija su obavezni!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Mapiranje Spinnera na tvoje Enume
+        Category selectedCat = allCategories.get(spinnerCategory.getSelectedItemPosition());
+        Difficulty diff = Difficulty.valueOf(spinnerDifficulty.getSelectedItem().toString());
+        Importance imp = Importance.valueOf(spinnerImportance.getSelectedItem().toString());
+
+        // Učestalost (0 = Jednokratno, 1 = Ponavljajuće)
+        FrequencyType freqType = (spinnerFrequency.getSelectedItemPosition() == 0) ?
+                FrequencyType.ONE_TIME : FrequencyType.RECURRING;
+
+        Integer interval = null;
+        RepeatUnit unit = null;
+        Long startDate = null;
+
+        if (freqType == FrequencyType.RECURRING) {
+            interval = Integer.parseInt(etRepeatInterval.getText().toString());
+            unit = RepeatUnit.valueOf(spinnerRepeatUnit.getSelectedItem().toString());
+            startDate = System.currentTimeMillis();
+        }
+
+        // Kreiranje objekta (Pazi na redosled u tvom Task konstruktoru!)
+        Task newTask = new Task(
+                selectedCat.getId(),
+                title,
+                desc,
+                freqType,
+                interval,
+                unit,
+                startDate,
+                null, // endDate
+                selectedExecutionTime,
+                diff,
+                imp
+        );
+
+        taskViewModel.insertTask(newTask);
+        Toast.makeText(this, "Zadatak sačuvan!", Toast.LENGTH_SHORT).show();
+        finish(); // Zatvara AddTaskActivity i vraća nas nazad
+    }
+}
