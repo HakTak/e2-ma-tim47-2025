@@ -1,6 +1,15 @@
 package com.example.projekatmobilne;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.GridLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -37,8 +46,86 @@ public class MainActivity extends AppCompatActivity {
         // 4. Click listener za dugme
         FloatingActionButton btn = findViewById(R.id.btnAddCategory);
         btn.setOnClickListener(v -> {
-            // Za test: Dodajemo nasumičnu kategoriju
-            viewModel.insertCategory("Nova " + (int)(Math.random()*100), "#FF5733");
+            // Poziva dijalog ispod da se unsese nova kategorija
+            showAddCategoryDialog();
         });
+    }
+    private String selectedColor = "#607D8B"; //Def boja ako korisnik ne klikne nista ili uspe da upadne neka glupost
+    private void showAddCategoryDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Nova Kategorija");
+
+        LinearLayout mainLayout = new LinearLayout(this);
+        mainLayout.setOrientation(LinearLayout.VERTICAL);
+        mainLayout.setPadding(50, 40, 50, 10);
+
+        final EditText inputName = new EditText(this);
+        inputName.setHint("Naziv kategorije");
+        inputName.setSingleLine(true);
+        mainLayout.addView(inputName);
+
+        TextView label = new TextView(this);
+        label.setText("\nIzaberi boju:");
+        mainLayout.addView(label);
+
+        // FIX: Koristimo FlowLayout ili precizniji GridLayout
+        GridLayout colorGrid = new GridLayout(this);
+        colorGrid.setColumnCount(5);
+        colorGrid.setAlignmentMode(GridLayout.ALIGN_BOUNDS);
+
+        String[] colors = {
+                "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5",
+                "#2196F3", "#00BCD4", "#4CAF50", "#FFC107", "#FF5722"
+        };
+
+        // Smanjili smo veličinu na 35dp da bi sigurno stalo
+        int size = (int) (35 * getResources().getDisplayMetrics().density);
+
+        for (String color : colors) {
+            View colorDot = new View(this);
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = size;
+            params.height = size;
+            params.setMargins(10, 10, 10, 10);
+            colorDot.setLayoutParams(params);
+
+            android.graphics.drawable.GradientDrawable dot = new android.graphics.drawable.GradientDrawable();
+            dot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            dot.setColor(Color.parseColor(color));
+            dot.setStroke(3, Color.LTGRAY); // Default ivica
+            colorDot.setBackground(dot);
+
+            colorDot.setOnClickListener(v -> {
+                selectedColor = color;
+                // Resetuj sve
+                for (int i = 0; i < colorGrid.getChildCount(); i++) {
+                    ((android.graphics.drawable.GradientDrawable) colorGrid.getChildAt(i).getBackground()).setStroke(3, Color.LTGRAY);
+                }
+                // Selektovan
+                dot.setStroke(8, Color.BLACK);
+            });
+
+            colorGrid.addView(colorDot);
+        }
+
+        mainLayout.addView(colorGrid);
+        builder.setView(mainLayout);
+
+        builder.setPositiveButton("Dodaj", (dialog, which) -> {
+            String name = inputName.getText().toString().trim();
+
+            // DEBUG LOG: Ispisuje u konzolu šta je uneto
+            android.util.Log.d("MOJA_APLIKACIJA", "Pokušaj unosa: " + name + " sa bojom: " + selectedColor);
+
+            if (!name.isEmpty()) {
+                viewModel.insertCategory(name, selectedColor);
+                Toast.makeText(this, "Dodato: " + name, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Ime ne sme biti prazno!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Otkaži", null);
+        builder.show();
     }
 }
