@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.projekatmobilne.Adapter.CategoryAdapter;
+import com.example.projekatmobilne.Model.Category;
 import com.example.projekatmobilne.ViewModels.CategoryViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -32,7 +33,9 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView rv = findViewById(R.id.recyclerViewCategories);
         rv.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new CategoryAdapter();
+        adapter = new CategoryAdapter(category -> {
+            showDeleteConfirmationDialog(category);
+        });
         rv.setAdapter(adapter);
 
         // 2. Setup ViewModel
@@ -49,6 +52,20 @@ public class MainActivity extends AppCompatActivity {
             // Poziva dijalog ispod da se unsese nova kategorija
             showAddCategoryDialog();
         });
+    }
+
+    private void showDeleteConfirmationDialog(Category category) {
+        new AlertDialog.Builder(this)
+                .setTitle("Brisanje kategorije")
+                .setMessage("Da li ste sigurni da želite da obrišete kategoriju '" + category.getName() + "'?")
+                .setPositiveButton("Obriši", (dialog, which) -> {
+                    // POZIV VIEWMODEL-A
+                    viewModel.deleteCategory(category.getId());
+                    Toast.makeText(this, "Kategorija obrisana", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Otkaži", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
     private String selectedColor = "#607D8B"; //Def boja ako korisnik ne klikne nista ili uspe da upadne neka glupost
     private void showAddCategoryDialog() {
