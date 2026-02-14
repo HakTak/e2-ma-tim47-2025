@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.Adapter;
+package com.example.projekatmobilne.adapters;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.projekatmobilne.Model.Category;
+import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.R;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.Enum;
+package com.example.projekatmobilne.enums;
 
 public enum Importance {
     NORMAL(1),

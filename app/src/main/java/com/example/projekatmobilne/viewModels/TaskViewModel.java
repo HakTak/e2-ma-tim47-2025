@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.ViewModels;
+package com.example.projekatmobilne.viewModels;
 
 import android.app.Application;
 
@@ -7,8 +7,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.example.projekatmobilne.Database.TaskRepository;
-import com.example.projekatmobilne.Model.Task;
+import com.example.projekatmobilne.database.TaskRepository;
+import com.example.projekatmobilne.models.Task;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;

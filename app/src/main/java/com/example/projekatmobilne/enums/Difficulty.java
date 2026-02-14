@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.Enum;
+package com.example.projekatmobilne.enums;
 
 public enum Difficulty {
     VERY_EASY(1),

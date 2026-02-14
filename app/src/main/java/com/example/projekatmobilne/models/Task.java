@@ -1,13 +1,13 @@
-package com.example.projekatmobilne.Model;
+package com.example.projekatmobilne.models;
 
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.PrimaryKey;
 
-import com.example.projekatmobilne.Enum.Difficulty;
-import com.example.projekatmobilne.Enum.FrequencyType;
-import com.example.projekatmobilne.Enum.Importance;
-import com.example.projekatmobilne.Enum.RepeatUnit;
+import com.example.projekatmobilne.enums.Difficulty;
+import com.example.projekatmobilne.enums.FrequencyType;
+import com.example.projekatmobilne.enums.Importance;
+import com.example.projekatmobilne.enums.RepeatUnit;
 
 @Entity(tableName = "tasks",
         foreignKeys = @ForeignKey(

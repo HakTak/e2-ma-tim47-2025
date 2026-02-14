@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.ViewModels;
+package com.example.projekatmobilne.viewModels;
 
 import android.app.Application;
 
@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.example.projekatmobilne.Database.CategoryRepository;
-import com.example.projekatmobilne.Model.Category;
+import com.example.projekatmobilne.database.CategoryRepository;
+import com.example.projekatmobilne.models.Category;
 
 public class CategoryViewModel extends AndroidViewModel {
 

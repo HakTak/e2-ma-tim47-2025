@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.Database;
+package com.example.projekatmobilne.database;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -6,7 +6,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
-import com.example.projekatmobilne.Model.Category;
+import com.example.projekatmobilne.models.Category;
 
 import java.util.ArrayList;
 import java.util.List;

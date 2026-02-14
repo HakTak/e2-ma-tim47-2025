@@ -1,4 +1,4 @@
-package com.example.projekatmobilne;
+package com.example.projekatmobilne.activities;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -14,9 +14,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.projekatmobilne.Adapter.CategoryAdapter;
-import com.example.projekatmobilne.Model.Category;
-import com.example.projekatmobilne.ViewModels.CategoryViewModel;
+
+import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.adapters.CategoryAdapter;
+import com.example.projekatmobilne.models.Category;
+import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {

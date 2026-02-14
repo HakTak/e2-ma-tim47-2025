@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.Model;
+package com.example.projekatmobilne.models;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;

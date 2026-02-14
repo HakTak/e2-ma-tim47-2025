@@ -1,4 +1,4 @@
-package com.example.projekatmobilne.Database;
+package com.example.projekatmobilne.database;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -6,11 +6,11 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
-import com.example.projekatmobilne.Enum.Difficulty;
-import com.example.projekatmobilne.Enum.FrequencyType;
-import com.example.projekatmobilne.Enum.Importance;
-import com.example.projekatmobilne.Enum.RepeatUnit;
-import com.example.projekatmobilne.Model.Task;
+import com.example.projekatmobilne.enums.Difficulty;
+import com.example.projekatmobilne.enums.FrequencyType;
+import com.example.projekatmobilne.enums.Importance;
+import com.example.projekatmobilne.enums.RepeatUnit;
+import com.example.projekatmobilne.models.Task;
 
 import java.util.ArrayList;
 import java.util.List;
