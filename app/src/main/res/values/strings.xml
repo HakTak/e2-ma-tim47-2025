@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">ProjekatMobilne</string>
-    <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
@@ -69,4 +68,59 @@
         <item>MONTH</item>
         <item>YEAR</item>
     </string-array>
+    <string name="my_tasks">Moji Zadaci</string>
+    <string name="new_task">Novi Zadatak</string>
+
+    <!-- AUTH -->
+    <string name="login">Prijava</string>
+    <string name="register">Registracija</string>
+    <string name="email">Email</string>
+    <string name="password">Lozinka</string>
+    <string name="confirm_password">Potvrdi lozinku</string>
+    <string name="username">Korisničko ime</string>
+    <string name="select_avatar">Izaberi avatar</string>
+    <string name="login_button">PRIJAVI SE</string>
+    <string name="register_button">REGISTRUJ SE</string>
+    <string name="no_account">Nemaš nalog?</string>
+    <string name="have_account">Već imaš nalog?</string>
+    <string name="go_to_register">Registruj se</string>
+    <string name="go_to_login">Prijavi se</string>
+
+    <!-- DRAWER MENU -->
+    <string name="drawer_home">Početna</string>
+    <string name="drawer_profile">Profil</string>
+    <string name="drawer_categories">Kategorije</string>
+    <string name="drawer_tasks">Zadaci</string>
+    <string name="drawer_statistics">Statistika</string>
+    <string name="drawer_logout">Odjavi se</string>
+
+    <!-- PROFILE -->
+    <string name="level">Nivo</string>
+    <string name="title_label">Titula</string>
+    <string name="pp_label">PP (Snaga)</string>
+    <string name="xp_label">XP</string>
+    <string name="coins_label">Novčići</string>
+    <string name="badges_label">Bedževi</string>
+    <string name="equipment_label">Oprema</string>
+    <string name="qr_code">QR Kod</string>
+    <string name="change_password">Promeni lozinku</string>
+
+    <!-- STATS -->
+    <string name="statistics">Statistika</string>
+    <string name="stats_coming_soon">Statistika dolazi uskoro...</string>
+
+    <!-- TOOLBAR -->
+    <string name="settings">Podešavanja</string>
+    <string name="navigation_drawer_open">Otvori meni</string>
+    <string name="navigation_drawer_close">Zatvori meni</string>
+
+    <!-- MESSAGES -->
+    <string name="email_verification_sent">Proveri email za aktivaciju naloga!</string>
+    <string name="email_not_verified">Aktiviraj nalog preko email-a!</string>
+    <string name="login_success">Dobrodošao!</string>
+    <string name="logout_confirm">Da li želiš da se odjaviš?</string>
+    <string name="yes">Da</string>
+    <string name="cancel">Otkaži</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
