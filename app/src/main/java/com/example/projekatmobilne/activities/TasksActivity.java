@@ -29,50 +29,43 @@ public class TasksActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tasks);
 
-        // 1. Preuzimanje podataka iz Intenta
+        // 1. Inicijalizacija
         categoryId = getIntent().getStringExtra("CATEGORY_ID");
-        String categoryName = getIntent().getStringExtra("CATEGORY_NAME");
-
-        TextView tvTitle = findViewById(R.id.tvCategoryTasksTitle);
-        tvTitle.setText("Zadaci: " + categoryName);
-
-        // 2. Inicijalizacija ViewModela
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
 
-        // 3. Setup RecyclerView i Adaptera
+        // 2. Setup RecyclerView
         RecyclerView rv = findViewById(R.id.recyclerViewTasks);
         rv.setLayoutManager(new LinearLayoutManager(this));
 
         TaskAdapter adapter = new TaskAdapter(
                 (task, isChecked) -> {
-                    // Update statusa (Checkbox)
                     task.setCompleted(isChecked);
                     taskViewModel.updateTask(task);
                 },
-                task -> {
-                    // Pozivamo metodu za brisanje (koju dodajemo dole)
-                    showDeleteTaskDialog(task);
-                }
+                task -> showDeleteTaskDialog(task)
         );
         rv.setAdapter(adapter);
 
-        // 4. Posmatranje podataka (Samo jedan observer je potreban)
+        // 3. PRVO postavi posmatrača (Observer)
         taskViewModel.getAllTasks().observe(this, tasks -> {
-            List<Task> filteredTasks = new ArrayList<>();
-            for (Task t : tasks) {
-                // Filtriramo taskove tako da prikazujemo samo one iz ove kategorije
-                if (t.getCategoryId().equals(categoryId)) {
-                    filteredTasks.add(t);
+            if (tasks != null) {
+                android.util.Log.d("UI_DEBUG", "Observer aktivan! Broj taskova za prikaz: " + tasks.size());
+                adapter.setTasks(tasks);
+                // Dodatni test: ako je lista i dalje prazna na ekranu, proveri visinu RV
+                if (tasks.size() > 0) {
+                    rv.setVisibility(android.view.View.VISIBLE);
                 }
+            } else {
+                android.util.Log.d("UI_DEBUG", "Observer primio NULL listu");
             }
-            adapter.setTasks(filteredTasks);
         });
 
-        // 5. Dugme za dodavanje novog taska
-        FloatingActionButton btnAdd = findViewById(R.id.btnAddTask);
-        btnAdd.setOnClickListener(v -> {
+        // 4. TEK SAD pokreni učitavanje
+        taskViewModel.loadAllTasks();
+
+        // 5. FAB
+        findViewById(R.id.btnAddTask).setOnClickListener(v -> {
             Intent intent = new Intent(TasksActivity.this, AddTaskActivity.class);
-            // Možemo proslediti categoryId da AddTaskActivity odmah zna u koju kategoriju da doda
             intent.putExtra("CATEGORY_ID", categoryId);
             startActivity(intent);
         });

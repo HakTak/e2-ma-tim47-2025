@@ -21,18 +21,28 @@ public class TaskRepository {
 
     // GET ALL TASKS (za specifičnog usera)
     public void getAllTasks(String userId, TasksCallback callback) {
+        android.util.Log.d("FIRESTORE_RETIREVE", "Pokrećem query za userId: " + userId);
+
         db.collection("tasks")
                 .whereEqualTo("userId", userId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
+                    android.util.Log.d("FIRESTORE_RETIREVE", "Uspeh! Broj dokumenata: " + querySnapshot.size());
                     List<Task> tasks = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : querySnapshot) {
-                        Task task = documentToTask(doc);
-                        tasks.add(task);
+                        try {
+                            Task task = documentToTask(doc);
+                            tasks.add(task);
+                        } catch (Exception e) {
+                            android.util.Log.e("FIRESTORE_RETIREVE", "Greška pri konverziji dokumenta: " + e.getMessage());
+                        }
                     }
                     callback.onTasksLoaded(tasks);
                 })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("FIRESTORE_RETIREVE", "Greška u query-ju: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
     // INSERT TASK
@@ -66,21 +76,43 @@ public class TaskRepository {
         task.setUserId(doc.getString("userId"));
         task.setCategoryId(doc.getString("categoryId"));
         task.setTitle(doc.getString("title"));
-        task.setDescription(doc.getString("description"));
-        task.setFrequencyType(FrequencyType.valueOf(doc.getString("frequencyType")));
-        task.setRepeatInterval(doc.getLong("repeatInterval") != null ? doc.getLong("repeatInterval").intValue() : null);
 
-        String repeatUnitStr = doc.getString("repeatUnit");
-        task.setRepeatUnit(repeatUnitStr != null ? RepeatUnit.valueOf(repeatUnitStr) : null);
+        // Bezbedno uzimanje Long/Int vrednosti
+        Long xpLong = doc.getLong("totalXp");
+        task.setTotalXp(xpLong != null ? xpLong.intValue() : 0);
 
-        task.setRepeatStartDate(doc.getLong("repeatStartDate"));
-        task.setRepeatEndDate(doc.getLong("repeatEndDate"));
-        task.setExecutionTime(doc.getLong("executionTime"));
-        task.setDifficulty(Difficulty.valueOf(doc.getString("difficulty")));
-        task.setImportance(Importance.valueOf(doc.getString("importance")));
-        task.setTotalXp(doc.getLong("totalXp").intValue());
-        task.setCompleted(doc.getBoolean("completed"));
+        Long execTime = doc.getLong("executionTime");
+        task.setExecutionTime(execTime != null ? execTime : 0L);
+
+        Boolean completed = doc.getBoolean("completed");
+        task.setCompleted(completed != null && completed);
+
+        // Pazi na Enum-e (dodaj try-catch ako nisi siguran da su stringovi ispravni)
+        try {
+            task.setDifficulty(Difficulty.valueOf(doc.getString("difficulty")));
+            task.setImportance(Importance.valueOf(doc.getString("importance")));
+            task.setFrequencyType(FrequencyType.valueOf(doc.getString("frequencyType")));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return task;
+    }
+
+    public void getTasksByCategory(String userId, String categoryId, TasksCallback callback) {
+        db.collection("tasks")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("categoryId", categoryId) // Filtriramo odmah u Firestore-u
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Task> tasks = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        Task task = documentToTask(doc);
+                        tasks.add(task);
+                    }
+                    callback.onTasksLoaded(tasks);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     // CALLBACKS

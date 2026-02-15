@@ -61,6 +61,12 @@ public class HomeActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
+            if (id == R.id.nav_tasks) {
+                startActivity(new Intent(this, TasksActivity.class));
+                drawerLayout.closeDrawer(GravityCompat.START);
+                return true;
+            }
+
             if (id == R.id.nav_logout) {
                 showLogoutDialog();
             } else {

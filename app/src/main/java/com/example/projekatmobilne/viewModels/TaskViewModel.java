@@ -1,6 +1,8 @@
 package com.example.projekatmobilne.viewModels;
 
 import android.app.Application;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
@@ -21,7 +23,7 @@ public class TaskViewModel extends AndroidViewModel {
         super(application);
         this.repository = new TaskRepository();
         this.prefsManager = new SharedPrefsManager(application);
-        loadAllTasks();
+        //loadAllTasks();
     }
 
     public MutableLiveData<List<Task>> getAllTasks() {
@@ -30,8 +32,30 @@ public class TaskViewModel extends AndroidViewModel {
 
     public void loadAllTasks() {
         String userId = prefsManager.getUserId();
+        android.util.Log.d("VIEWMODEL_DEBUG", "Dobijen userId iz Prefs: " + userId);
+
         if (userId != null) {
             repository.getAllTasks(userId, new TaskRepository.TasksCallback() {
+                @Override
+                public void onTasksLoaded(List<Task> tasks) {
+                    android.util.Log.d("VIEWMODEL_DEBUG", "Stiglo taskova u ViewModel: " + tasks.size());
+                    tasksLiveData.postValue(tasks);
+                }
+
+                @Override
+                public void onError(String error) {
+                    android.util.Log.e("VIEWMODEL_DEBUG", "Greška u ViewModelu: " + error);
+                }
+            });
+        } else {
+            android.util.Log.e("VIEWMODEL_DEBUG", "UserID je NULL u SharedPrefs!");
+        }
+    }
+
+    public void loadTasksByCategory(String categoryId) {
+        String userId = prefsManager.getUserId();
+        if (userId != null && categoryId != null) {
+            repository.getTasksByCategory(userId, categoryId, new TaskRepository.TasksCallback() {
                 @Override
                 public void onTasksLoaded(List<Task> tasks) {
                     tasksLiveData.postValue(tasks);
@@ -39,7 +63,7 @@ public class TaskViewModel extends AndroidViewModel {
 
                 @Override
                 public void onError(String error) {
-                    // Handle error
+                    // Loguj grešku da vidiš šta se dešava
                 }
             });
         }
@@ -58,6 +82,8 @@ public class TaskViewModel extends AndroidViewModel {
             }
         });
     }
+
+
 
     public void updateTask(Task task) {
         repository.updateTask(task, new TaskRepository.UpdateCallback() {
