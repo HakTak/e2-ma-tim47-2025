@@ -96,9 +96,11 @@
             android:background="#F1F2F6"
             android:padding="12dp">
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ponavljaj na svakih:" android:textSize="12sp"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Ponavljaj na svakih:" android:textSize="12sp" android:textStyle="bold"/>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
                 <EditText
                     android:id="@+id/etRepeatInterval"
                     android:layout_width="60dp"
@@ -112,6 +114,36 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:entries="@array/unit_array"/>
+            </LinearLayout>
+
+            <!-- NOVA POLJA ZA DATUME -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Period ponavljanja:" android:textSize="12sp" android:textStyle="bold"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:weightSum="2">
+                <Button
+                    android:id="@+id/btnPickStartDate"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Od: Izaberi"/>
+                <Button
+                    android:id="@+id/btnPickEndDate"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Do: Izaberi"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:weightSum="2">
+                <TextView android:id="@+id/tvStartDate" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Nije izabrano" android:textSize="11sp" android:textAlignment="center"/>
+                <TextView android:id="@+id/tvEndDate" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Nije izabrano" android:textSize="11sp" android:textAlignment="center"/>
             </LinearLayout>
         </LinearLayout>
 

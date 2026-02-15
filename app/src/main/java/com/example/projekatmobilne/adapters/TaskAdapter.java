@@ -9,11 +9,13 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -61,6 +63,28 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         holder.tvTime.setText(sdf.format(new Date(task.getExecutionTime())));
 
+        if (task.getFrequencyType() == FrequencyType.RECURRING) {
+            // Uzimamo trenutno vreme (početak dana) za poređenje
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+
+            Long nextDate = task.getNextOccurrence(cal.getTimeInMillis());
+
+            if (nextDate != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy.", Locale.getDefault());
+                holder.tvNextOccurrence.setText("Sledeće: " + dateFormat.format(new Date(nextDate)));
+                holder.tvNextOccurrence.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvNextOccurrence.setText("Završeno");
+                holder.tvNextOccurrence.setVisibility(View.VISIBLE);
+            }
+        } else {
+            // Ako je jednokratni, sakrivamo polje
+            holder.tvNextOccurrence.setVisibility(View.GONE);
+        }
+
         // Checkbox status (bez okidanja listenera dok setujemo inicijalno)
         holder.cbCompleted.setOnCheckedChangeListener(null);
         holder.cbCompleted.setChecked(task.isCompleted());
@@ -96,7 +120,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvTime, tvXp;
+        TextView tvTitle, tvTime, tvXp, tvNextOccurrence;
         CheckBox cbCompleted;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -104,7 +128,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTitle = itemView.findViewById(R.id.tvTaskTitle);
             tvTime = itemView.findViewById(R.id.tvTaskTime);
             tvXp = itemView.findViewById(R.id.tvTaskXp);
+            tvNextOccurrence = itemView.findViewById(R.id.tvNextOccurrence); // DODATO
             cbCompleted = itemView.findViewById(R.id.cbCompleted);
         }
     }
+
+
 }

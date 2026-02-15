@@ -5,7 +5,9 @@ import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.Importance;
 import com.example.projekatmobilne.enums.RepeatUnit;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Task {
@@ -24,6 +26,7 @@ public class Task {
     private Long repeatEndDate;
 
     private long executionTime;
+    private List<Long> recurringDates = new ArrayList<>();
 
     private Difficulty difficulty;
     private Importance importance;
@@ -36,7 +39,7 @@ public class Task {
     public Task(String userId, String categoryId, String title, String description,
                 FrequencyType frequencyType, Integer repeatInterval, RepeatUnit repeatUnit,
                 Long repeatStartDate, Long repeatEndDate, long executionTime,
-                Difficulty difficulty, Importance importance) {
+                Difficulty difficulty, Importance importance, List<Long> recurringDates) {
 
         this.userId = userId;
         this.categoryId = categoryId;
@@ -50,6 +53,7 @@ public class Task {
         this.executionTime = executionTime;
         this.difficulty = difficulty;
         this.importance = importance;
+        this.recurringDates = recurringDates;
         this.totalXp = difficulty.getXp() + importance.getXp();
         this.completed = false;
     }
@@ -67,6 +71,7 @@ public class Task {
         map.put("repeatStartDate", repeatStartDate);
         map.put("repeatEndDate", repeatEndDate);
         map.put("executionTime", executionTime);
+        map.put("recurringDates", recurringDates);
         map.put("difficulty", difficulty.name());
         map.put("importance", importance.name());
         map.put("totalXp", totalXp);
@@ -117,6 +122,25 @@ public class Task {
     public int getTotalXp() { return totalXp; }
     public void setTotalXp(int totalXp) { this.totalXp = totalXp; }
 
+    public List<Long> getRecurringDates() { return recurringDates; }
+    public void setRecurringDates(List<Long> recurringDates) { this.recurringDates = recurringDates; }
+
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
+
+    public Long getNextOccurrence(long currentTime) {
+        if (recurringDates == null || recurringDates.isEmpty()) {
+            return null;
+        }
+
+        // Tražimo prvi datum u listi koji je veći ili jednak trenutnom vremenu
+        for (Long date : recurringDates) {
+            if (date >= currentTime) {
+                return date;
+            }
+        }
+
+        // Ako su svi datumi u prošlosti, vraćamo null ili poslednji (zavisi od logike)
+        return null;
+    }
 }

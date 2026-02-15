@@ -18,6 +18,7 @@ import com.example.projekatmobilne.viewModels.TaskViewModel;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 
 public class AddTaskActivity extends AppCompatActivity {
@@ -33,6 +34,10 @@ public class AddTaskActivity extends AppCompatActivity {
     private SharedPrefsManager prefsManager;
     private List<Category> allCategories = new ArrayList<>();
     private long selectedExecutionTime = System.currentTimeMillis(); // Default je sad
+    private Button btnPickStartDate, btnPickEndDate;
+    private TextView tvStartDate, tvEndDate;
+    private Long repeatStartDate = null;
+    private Long repeatEndDate = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +68,29 @@ public class AddTaskActivity extends AppCompatActivity {
 
         // 4. SAVE DUGME
         btnSaveTask.setOnClickListener(v -> saveTask());
+
+        btnPickStartDate.setOnClickListener(v -> showDatePicker(true));
+        btnPickEndDate.setOnClickListener(v -> showDatePicker(false));
+    }
+
+    private void showDatePicker(boolean isStartDate) {
+        Calendar c = Calendar.getInstance();
+        new android.app.DatePickerDialog(this, (view, year, month, day) -> {
+            c.set(Calendar.YEAR, year);
+            c.set(Calendar.MONTH, month);
+            c.set(Calendar.DAY_OF_MONTH, day);
+
+            long time = c.getTimeInMillis();
+            String dateStr = day + "." + (month + 1) + "." + year + ".";
+
+            if (isStartDate) {
+                repeatStartDate = time;
+                tvStartDate.setText(dateStr);
+            } else {
+                repeatEndDate = time;
+                tvEndDate.setText(dateStr);
+            }
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void initViews() {
@@ -78,6 +106,10 @@ public class AddTaskActivity extends AppCompatActivity {
         tvSelectedTime = findViewById(R.id.tvSelectedTime);
         btnPickTime = findViewById(R.id.btnPickTime);
         btnSaveTask = findViewById(R.id.btnSaveTask);
+        btnPickStartDate = findViewById(R.id.btnPickStartDate);
+        btnPickEndDate = findViewById(R.id.btnPickEndDate);
+        tvStartDate = findViewById(R.id.tvStartDate);
+        tvEndDate = findViewById(R.id.tvEndDate);
     }
 
     private void loadCategoriesIntoSpinner() {
@@ -130,33 +162,86 @@ public class AddTaskActivity extends AppCompatActivity {
         FrequencyType freqType = (spinnerFrequency.getSelectedItemPosition() == 0) ?
                 FrequencyType.ONE_TIME : FrequencyType.RECURRING;
 
+        List<Long> calculatedDates = new ArrayList<>();
         Integer interval = null;
         RepeatUnit unit = null;
-        Long startDate = null;
+        Long finalStartDate = null;
+        Long finalEndDate = null;
 
         if (freqType == FrequencyType.RECURRING) {
-            interval = Integer.parseInt(etRepeatInterval.getText().toString());
-            unit = RepeatUnit.valueOf(spinnerRepeatUnit.getSelectedItem().toString());
-            startDate = System.currentTimeMillis();
+            String intervalStr = etRepeatInterval.getText().toString();
+            interval = intervalStr.isEmpty() ? 1 : Integer.parseInt(intervalStr);
+
+            // Pazi: Spinner entries moraju odgovarati Enum imenima (npr. DAY, WEEK)
+            unit = RepeatUnit.valueOf(spinnerRepeatUnit.getSelectedItem().toString().toUpperCase());
+
+            finalStartDate = repeatStartDate;
+            finalEndDate = repeatEndDate;
+
+            if (finalStartDate == null || finalEndDate == null) {
+                Toast.makeText(this, "Izaberite period ponavljanja!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Generisanje liste datuma
+            calculatedDates = generateRecurringDates(repeatStartDate, repeatEndDate, unit, interval);
+
+            Collections.sort(calculatedDates);
+
+        }else{
+            // Za jednokratne zadatke, lista sadrži samo izabrano vreme izvršenja
+            calculatedDates.add(selectedExecutionTime);
         }
 
         Task newTask = new Task(
-                userId,                    // DODATO - prvi parametar
-                selectedCat.getId(),
+                prefsManager.getUserId(),
+                allCategories.get(spinnerCategory.getSelectedItemPosition()).getId(),
                 title,
-                desc,
+                etDescription.getText().toString().trim(),
                 freqType,
                 interval,
                 unit,
-                startDate,
-                null, // endDate
+                finalStartDate,
+                finalEndDate,
                 selectedExecutionTime,
-                diff,
-                imp
+                Difficulty.valueOf(spinnerDifficulty.getSelectedItem().toString()),
+                Importance.valueOf(spinnerImportance.getSelectedItem().toString()),
+                calculatedDates
         );
 
         taskViewModel.insertTask(newTask);
         Toast.makeText(this, "Zadatak sačuvan!", Toast.LENGTH_SHORT).show();
         finish(); // Zatvara AddTaskActivity i vraća nas nazad
+    }
+
+    private List<Long> generateRecurringDates(long start, long end, RepeatUnit unit, int interval) {
+        List<Long> dates = new ArrayList<>();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(start);
+
+        // Prvi datum je uvek datum početka (ako je unutar opsega)
+        while (calendar.getTimeInMillis() <= end) {
+            dates.add(calendar.getTimeInMillis());
+
+            // Pomeranje kalendara unapred za zadati interval i jedinicu
+            switch (unit) {
+                case DAY:
+                    calendar.add(Calendar.DAY_OF_YEAR, interval);
+                    break;
+                case WEEK:
+                    calendar.add(Calendar.WEEK_OF_YEAR, interval);
+                    break;
+                case MONTH:
+                    calendar.add(Calendar.MONTH, interval);
+                    break;
+                case YEAR:
+                    calendar.add(Calendar.YEAR, interval);
+                    break;
+            }
+
+            // Sigurnosna kočnica - sprečava beskonačne petlje ako je interval 0 ili negativan
+            if (interval <= 0) break;
+        }
+        return dates;
     }
 }

@@ -76,25 +76,47 @@ public class TaskRepository {
         task.setUserId(doc.getString("userId"));
         task.setCategoryId(doc.getString("categoryId"));
         task.setTitle(doc.getString("title"));
+        task.setDescription(doc.getString("description"));
 
-        // Bezbedno uzimanje Long/Int vrednosti
+        // BROJEVI - Sigurno kastovanje
         Long xpLong = doc.getLong("totalXp");
         task.setTotalXp(xpLong != null ? xpLong.intValue() : 0);
 
         Long execTime = doc.getLong("executionTime");
         task.setExecutionTime(execTime != null ? execTime : 0L);
 
+        // DATUMI PONAVLJANJA
+        task.setRepeatStartDate(doc.getLong("repeatStartDate"));
+        task.setRepeatEndDate(doc.getLong("repeatEndDate"));
+
+        Long intervalLong = doc.getLong("repeatInterval");
+        task.setRepeatInterval(intervalLong != null ? intervalLong.intValue() : null);
+
+        // ENUMI - Sa try-catch zbog sigurnosti
+        try {
+            String freq = doc.getString("frequencyType");
+            if (freq != null) task.setFrequencyType(FrequencyType.valueOf(freq));
+
+            String diff = doc.getString("difficulty");
+            if (diff != null) task.setDifficulty(Difficulty.valueOf(diff));
+
+            String imp = doc.getString("importance");
+            if (imp != null) task.setImportance(Importance.valueOf(imp));
+
+            String unit = doc.getString("repeatUnit");
+            if (unit != null) task.setRepeatUnit(RepeatUnit.valueOf(unit));
+
+            List<Long> dates = (List<Long>) doc.get("recurringDates");
+            if (dates != null) {
+                task.setRecurringDates(dates);
+            }
+
+        } catch (Exception e) {
+            android.util.Log.e("REPO_ERROR", "Greška kod Enuma: " + e.getMessage());
+        }
+
         Boolean completed = doc.getBoolean("completed");
         task.setCompleted(completed != null && completed);
-
-        // Pazi na Enum-e (dodaj try-catch ako nisi siguran da su stringovi ispravni)
-        try {
-            task.setDifficulty(Difficulty.valueOf(doc.getString("difficulty")));
-            task.setImportance(Importance.valueOf(doc.getString("importance")));
-            task.setFrequencyType(FrequencyType.valueOf(doc.getString("frequencyType")));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         return task;
     }
