@@ -22,7 +22,7 @@ import java.util.List;
 public class TasksActivity extends AppCompatActivity {
 
     private TaskViewModel taskViewModel;
-    private long categoryId;
+    private String categoryId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +30,7 @@ public class TasksActivity extends AppCompatActivity {
         setContentView(R.layout.activity_tasks);
 
         // 1. Preuzimanje podataka iz Intenta
-        categoryId = getIntent().getLongExtra("CATEGORY_ID", -1);
+        categoryId = getIntent().getStringExtra("CATEGORY_ID");
         String categoryName = getIntent().getStringExtra("CATEGORY_NAME");
 
         TextView tvTitle = findViewById(R.id.tvCategoryTasksTitle);
@@ -61,7 +61,7 @@ public class TasksActivity extends AppCompatActivity {
             List<Task> filteredTasks = new ArrayList<>();
             for (Task t : tasks) {
                 // Filtriramo taskove tako da prikazujemo samo one iz ove kategorije
-                if (t.getCategoryId() == categoryId) {
+                if (t.getCategoryId().equals(categoryId)) {
                     filteredTasks.add(t);
                 }
             }

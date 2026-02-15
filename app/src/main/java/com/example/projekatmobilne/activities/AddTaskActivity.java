@@ -12,6 +12,7 @@ import com.example.projekatmobilne.enums.*;
 import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.utils.SharedPrefsManager;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 
@@ -29,7 +30,7 @@ public class AddTaskActivity extends AppCompatActivity {
 
     private CategoryViewModel categoryViewModel;
     private TaskViewModel taskViewModel;
-
+    private SharedPrefsManager prefsManager;
     private List<Category> allCategories = new ArrayList<>();
     private long selectedExecutionTime = System.currentTimeMillis(); // Default je sad
 
@@ -42,6 +43,7 @@ public class AddTaskActivity extends AppCompatActivity {
 
         categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
         taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        prefsManager = new SharedPrefsManager(this);
 
         // 1. Popuni spinner kategorijama iz baze
         loadCategoriesIntoSpinner();
@@ -116,6 +118,11 @@ public class AddTaskActivity extends AppCompatActivity {
 
         // Mapiranje Spinnera na tvoje Enume
         Category selectedCat = allCategories.get(spinnerCategory.getSelectedItemPosition());
+        String userId = prefsManager.getUserId();
+        if(userId == null){
+            Toast.makeText(this, "Greska: niste ulogovani!", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Difficulty diff = Difficulty.valueOf(spinnerDifficulty.getSelectedItem().toString());
         Importance imp = Importance.valueOf(spinnerImportance.getSelectedItem().toString());
 
@@ -133,8 +140,8 @@ public class AddTaskActivity extends AppCompatActivity {
             startDate = System.currentTimeMillis();
         }
 
-        // Kreiranje objekta (Pazi na redosled u tvom Task konstruktoru!)
         Task newTask = new Task(
+                userId,                    // DODATO - prvi parametar
                 selectedCat.getId(),
                 title,
                 desc,

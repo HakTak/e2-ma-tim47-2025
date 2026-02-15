@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "156331442187",
+    "project_id": "habitrpg-b9fd5",
+    "storage_bucket": "habitrpg-b9fd5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156331442187:android:f4505f9a05faf21948070e",
+        "android_client_info": {
+          "package_name": "com.example.projekatmobilne"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1xI7hshzsKs3b7OamGqNfBZN7hSnFOiE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
