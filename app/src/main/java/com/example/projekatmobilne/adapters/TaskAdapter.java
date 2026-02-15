@@ -35,9 +35,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         void onTaskLongClick(Task task);
     }
 
-    public TaskAdapter(OnTaskStatusChangeListener statusListener, OnTaskLongClickListener longClickListener) {
+    private OnTaskClickListener clickListener;
+
+    public interface OnTaskClickListener {
+        void onTaskClick(Task task);
+    }
+
+    public TaskAdapter(OnTaskStatusChangeListener statusListener,
+                       OnTaskLongClickListener longClickListener,
+                       OnTaskClickListener clickListener) { // DODATO
         this.statusListener = statusListener;
         this.longClickListener = longClickListener;
+        this.clickListener = clickListener;
     }
 
     public void setTasks(List<Task> tasks) {
@@ -111,6 +120,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 longClickListener.onTaskLongClick(task);
             }
             return true;
+        });
+
+        // DODAJ KLIK NA CELU STAVKU
+        holder.itemView.setOnClickListener(v -> {
+            if (clickListener != null) {
+                clickListener.onTaskClick(task);
+            }
         });
     }
 

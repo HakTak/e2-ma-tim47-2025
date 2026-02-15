@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.adapters.TaskAdapter;
+import com.example.projekatmobilne.fragments.TaskDetailFragment;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
@@ -42,7 +43,8 @@ public class TasksActivity extends AppCompatActivity {
                     task.setCompleted(isChecked);
                     taskViewModel.updateTask(task);
                 },
-                task -> showDeleteTaskDialog(task)
+                task -> showDeleteTaskDialog(task),
+                task -> openTaskDetail(task) // DODAJ OVAJ TREĆI PARAMETAR
         );
         rv.setAdapter(adapter);
 
@@ -83,5 +85,14 @@ public class TasksActivity extends AppCompatActivity {
                 .setNegativeButton("Otkaži", null)
                 .setIcon(android.R.drawable.ic_delete)
                 .show();
+    }
+
+    private void openTaskDetail(Task task) {
+        TaskDetailFragment fragment = TaskDetailFragment.newInstance(task);
+        getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out) // Lepa animacija
+                .replace(R.id.fragmentContainer, fragment)
+                .addToBackStack(null) // Omogućava da se vratiš nazad na dugme 'back'
+                .commit();
     }
 }

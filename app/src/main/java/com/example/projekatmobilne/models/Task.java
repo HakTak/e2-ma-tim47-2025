@@ -5,12 +5,13 @@ import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.Importance;
 import com.example.projekatmobilne.enums.RepeatUnit;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Task {
+public class Task implements Serializable {
 
     private String id; // Firestore ID (String)
     private String userId; // DODATO - ko je kreirao task

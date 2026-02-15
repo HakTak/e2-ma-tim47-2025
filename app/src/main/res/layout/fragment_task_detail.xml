@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvDetailTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Naslov zadatka"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#2D3436"/>
+
+    <TextView
+        android:id="@+id/tvDetailDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Opis zadatka ide ovde..."
+        android:textSize="16sp"
+        android:textColor="#636E72"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#DFE6E9"
+        android:layout_marginVertical="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="8dp">
+
+        <!-- STATUS (Hardkodovano) -->
+        <TextView
+            android:id="@+id/tvDetailStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status: AKTIVAN"
+            android:textColor="#27AE60"
+            android:textStyle="bold"
+            android:paddingBottom="4dp"/>
+
+        <!-- KATEGORIJA -->
+        <TextView
+            android:id="@+id/tvDetailCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kategorija: Loading..."
+            android:textColor="#2D3436"
+            android:paddingBottom="4dp"/>
+
+        <!-- TEŽINA -->
+        <TextView
+            android:id="@+id/tvDetailDifficulty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Težina: Srednje"
+            android:textColor="#2D3436"
+            android:paddingBottom="4dp"/>
+
+        <!-- BITNOST -->
+        <TextView
+            android:id="@+id/tvDetailImportance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bitnost: Visoka"
+            android:textColor="#2D3436"
+            android:paddingBottom="4dp"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvDetailXp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vrednost: 50 XP"
+        android:textStyle="bold"
+        android:textColor="#6200EE"/>
+
+    <TextView
+        android:id="@+id/tvDetailFrequency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Učestalost: Ponavljajuće"/>
+
+    <TextView
+        android:id="@+id/tvDetailDates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Svi datumi ponavljanja: \n- 01.08.2025\n- 07.08.2025"
+        android:textSize="14sp"/>
+
+    <Button
+        android:id="@+id/btnCloseDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="ZATVORI"
+        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+</LinearLayout>
