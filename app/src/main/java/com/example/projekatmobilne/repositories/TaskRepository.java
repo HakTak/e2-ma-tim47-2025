@@ -1,5 +1,7 @@
 package com.example.projekatmobilne.repositories;
 
+import android.util.Log;
+
 import com.example.projekatmobilne.enums.Difficulty;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.Importance;
@@ -95,7 +97,12 @@ public class TaskRepository {
         // ENUMI - Sa try-catch zbog sigurnosti
         try {
             String freq = doc.getString("frequencyType");
-            if (freq != null) task.setFrequencyType(FrequencyType.valueOf(freq));
+            if (freq != null) {
+                task.setFrequencyType(FrequencyType.valueOf(freq));
+            }else {
+                Log.e("REPO_DEBUG", "Task " + task.getTitle() + " nema frequencyType u bazi!");
+                task.setFrequencyType(FrequencyType.ONE_TIME);
+            }
 
             String diff = doc.getString("difficulty");
             if (diff != null) task.setDifficulty(Difficulty.valueOf(diff));

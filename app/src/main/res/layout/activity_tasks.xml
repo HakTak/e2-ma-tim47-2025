@@ -13,12 +13,23 @@
         android:text="Kategorija"
         android:textSize="24sp"
         android:textStyle="bold" /> -->
+    <ImageButton
+        android:id="@+id/btnFilterTasks"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Filter"
+        android:src="@android:drawable/ic_menu_sort_by_size"
+        app:tint="#6200EE" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewTasks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-         />
+        android:layout_below="@id/btnFilterTasks"
+        android:paddingTop="8dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnAddTask"
