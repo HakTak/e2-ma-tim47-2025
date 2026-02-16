@@ -3,17 +3,19 @@ package com.example.projekatmobilne.utils;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.DayViewDecorator;
 import com.prolificinteractive.materialcalendarview.DayViewFacade;
-import com.prolificinteractive.materialcalendarview.spans.DotSpan;
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 public class EventDecorator implements DayViewDecorator {
-    private final int color;
+    private final int[] colors;
     private final HashSet<CalendarDay> dates;
 
-    public EventDecorator(int color, Collection<CalendarDay> dates) {
-        this.color = color;
-        this.dates = new HashSet<>(dates);
+    public EventDecorator(List<Integer> colors, HashSet<CalendarDay> dates) {
+        this.colors = new int[colors.size()];
+        for (int i = 0; i < colors.size(); i++) {
+            this.colors[i] = colors.get(i);
+        }
+        this.dates = dates;
     }
 
     @Override
@@ -23,6 +25,7 @@ public class EventDecorator implements DayViewDecorator {
 
     @Override
     public void decorate(DayViewFacade view) {
-        view.addSpan(new DotSpan(8, color)); // Crta tačkicu veličine 8px
+        // Koristimo naš novi MultipleDotSpan
+        view.addSpan(new MultipleDotSpan(7, colors));
     }
 }
