@@ -24,6 +24,7 @@ import com.example.projekatmobilne.viewModels.TaskViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class TasksActivity extends AppCompatActivity {
@@ -48,8 +49,6 @@ public class TasksActivity extends AppCompatActivity {
         RecyclerView rv = findViewById(R.id.recyclerViewTasks);
         rv.setLayoutManager(new LinearLayoutManager(this));
 
-
-
         adapter = new TaskAdapter(
                 (task, newStatus) -> {
                     task.setStatus(newStatus); // Postavljamo novi status
@@ -68,11 +67,14 @@ public class TasksActivity extends AppCompatActivity {
         taskViewModel.getAllTasks().observe(this, tasks -> {
             if (tasks != null) {
                 masterTaskList = tasks; // Sačuvaj originalnu listu
-                applyFilter(); // Primeni trenutno aktivni filter
-                android.util.Log.d("UI_DEBUG", "Observer aktivan! Broj taskova za prikaz: " + tasks.size());
-                adapter.setTasks(tasks);
+
+                // >>> PROMENA OVDE: Pozivamo applyFilter() koji će uraditi posao i za startni prikaz
+                applyFilter();
+
+                android.util.Log.d("UI_DEBUG", "Observer aktivan! Broj taskova nakon filtriranja prošlosti: " + adapter.getItemCount());
+
                 // Dodatni test: ako je lista i dalje prazna na ekranu, proveri visinu RV
-                if (tasks.size() > 0) {
+                if (adapter.getItemCount() > 0) {
                     rv.setVisibility(android.view.View.VISIBLE);
                 }
             } else {
@@ -109,13 +111,12 @@ public class TasksActivity extends AppCompatActivity {
                     Toast.makeText(this, "Zadatak obrisan", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Otkaži", null)
-                .setIcon(android.R.drawable.ic_delete)
+                .setIcon(R.drawable.avatar_1)
                 .show();
     }
 
     private void openTaskDetail(Task task) {
         TaskDetailFragment fragment = TaskDetailFragment.newInstance(task);
-        // Koristimo getSupportFragmentManager() jer smo u Activity-ju
         fragment.show(getSupportFragmentManager(), "task_detail");
     }
 
@@ -127,7 +128,7 @@ public class TasksActivity extends AppCompatActivity {
         popup.getMenu().add(0, 2, 2, "Samo ponavljajući");
 
         popup.setOnMenuItemClickListener(item -> {
-            Log.d("FILTER_DEBUG", "Kliknut meni ID: " + item.getItemId()); // DODAJ OVAJ LOG
+            Log.d("FILTER_DEBUG", "Kliknut meni ID: " + item.getItemId());
             currentFilterMode = item.getItemId();
             applyFilter();
             return true;
@@ -140,43 +141,60 @@ public class TasksActivity extends AppCompatActivity {
 
         if (adapter == null) {
             Log.e("FILTER_DEBUG", "Adapter je NULL!");
-            return; // Sigurnosni prekid
+            return;
         }
-        Log.d("FILTER_DEBUG", "--- START FILTRIRANJA ---");
-        Log.d("FILTER_DEBUG", "Trenutni mod filtera: " + currentFilterMode);
-        Log.d("FILTER_DEBUG", "Ukupno u master listi: " + masterTaskList.size());
 
-        Log.d("FILTER_DEBUG", "Pokrećem filter. Mod: " + currentFilterMode + ", Ukupno taskova u master listi: " + masterTaskList.size());
+        Log.d("FILTER_DEBUG", "--- START FILTRIRANJA ---");
+
+        // VREMENSKI ŠTIT: Početak današnjeg dana (00:00:00)
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        long startOfToday = cal.getTimeInMillis();
 
         List<Task> filteredList = new ArrayList<>();
 
         for (Task task : masterTaskList) {
-            // LOGUJEMO SVAKI TASK DA VIDIMO ŠTA JE U NJEMU
-            //Log.d("FILTER_DEBUG", "Proveravam task: " + task.getTitle() + " | Tip: " + task.getFrequencyType());
             FrequencyType type = task.getFrequencyType();
-            Log.d("FILTER_DEBUG", "Task: " + task.getTitle() + " | Tip u objektu: " + (type != null ? type.name() : "NULL"));
+
+            // 1. PROVERA VREMENSKOG ŠTITA (Samo budući i današnji)
+            if (isTaskInPast(task, startOfToday)) {
+                continue; // Preskoči stare zadatke
+            }
+
+            // 2. FILTRIRANJE PO TIPU (Tvoja postojeća logika)
             if (currentFilterMode == 0) {
-                // Prikaži sve
                 filteredList.add(task);
             } else if (currentFilterMode == 1) {
-                // Samo jednokratni
-                if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
+                if (type == FrequencyType.ONE_TIME) {
                     filteredList.add(task);
                 }
             } else if (currentFilterMode == 2) {
-                // Samo ponavljajući
-                if (task.getFrequencyType() == FrequencyType.RECURRING) {
+                if (type == FrequencyType.RECURRING) {
                     filteredList.add(task);
                 }
             }
         }
-        Log.d("FILTER_DEBUG", "Kraj. Filtrirano za prikaz: " + filteredList.size());
-        Log.d("FILTER_DEBUG", "--- END FILTRIRANJA ---");
-        adapter.setTasks(filteredList);
 
-        // Opciono: Toast poruka da korisnik zna šta vidi
-        String msg = currentFilterMode == 0 ? "Svi zadaci" :
-                (currentFilterMode == 1 ? "Jednokratni zadaci" : "Ponavljajući zadaci");
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        Log.d("FILTER_DEBUG", "Kraj. Prikazujem: " + filteredList.size() + " od ukupno " + masterTaskList.size());
+
+        // Ažuriranje adaptera sa filtriranom listom
+        adapter.setTasks(filteredList);
+    }
+
+    private boolean isTaskInPast(Task task, long startOfToday) {
+        if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
+            return task.getExecutionTime() < startOfToday;
+        } else {
+            List<Long> recurringDates = task.getRecurringDates();
+            if (recurringDates == null || recurringDates.isEmpty()) {
+                return task.getExecutionTime() < startOfToday;
+            }
+            // Ponavljajući je u prošlosti samo ako mu je POSLEDNJI planirani datum prošao
+            long lastOccurrence = recurringDates.get(recurringDates.size() - 1);
+            return lastOccurrence < startOfToday;
+        }
     }
 }
