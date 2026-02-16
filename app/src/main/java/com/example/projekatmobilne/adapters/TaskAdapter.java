@@ -1,15 +1,18 @@
 package com.example.projekatmobilne.adapters;
 
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.enums.FrequencyType;
+import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
 
@@ -25,17 +28,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private List<Task> taskList = new ArrayList<>();
     private OnTaskStatusChangeListener statusListener;
     private OnTaskLongClickListener longClickListener;
+    private OnTaskClickListener clickListener;
 
-    // Interfejsi za komunikaciju sa Activity-jem
     public interface OnTaskStatusChangeListener {
-        void onStatusChanged(Task task, boolean isCompleted);
+        void onStatusChanged(Task task, TaskStatus newStatus);
     }
 
     public interface OnTaskLongClickListener {
         void onTaskLongClick(Task task);
     }
-
-    private OnTaskClickListener clickListener;
 
     public interface OnTaskClickListener {
         void onTaskClick(Task task);
@@ -43,7 +44,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public TaskAdapter(OnTaskStatusChangeListener statusListener,
                        OnTaskLongClickListener longClickListener,
-                       OnTaskClickListener clickListener) { // DODATO
+                       OnTaskClickListener clickListener) {
         this.statusListener = statusListener;
         this.longClickListener = longClickListener;
         this.clickListener = clickListener;
@@ -68,19 +69,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.tvTitle.setText(task.getTitle());
         holder.tvXp.setText("+" + task.getTotalXp() + " XP");
 
-        // Formatiranje vremena (long -> HH:mm)
+        // Formatiranje vremena
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         holder.tvTime.setText(sdf.format(new Date(task.getExecutionTime())));
 
+        // Logika za sledeće ponavljanje
         if (task.getFrequencyType() == FrequencyType.RECURRING) {
-            // Uzimamo trenutno vreme (početak dana) za poređenje
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
 
             Long nextDate = task.getNextOccurrence(cal.getTimeInMillis());
-
             if (nextDate != null) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy.", Locale.getDefault());
                 holder.tvNextOccurrence.setText("Sledeće: " + dateFormat.format(new Date(nextDate)));
@@ -90,16 +90,20 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 holder.tvNextOccurrence.setVisibility(View.VISIBLE);
             }
         } else {
-            // Ako je jednokratni, sakrivamo polje
             holder.tvNextOccurrence.setVisibility(View.GONE);
         }
 
-        // Checkbox status (bez okidanja listenera dok setujemo inicijalno)
-        holder.cbCompleted.setOnCheckedChangeListener(null);
-        holder.cbCompleted.setChecked(task.isCompleted());
+        // --- NOVI DEO: PRIKAZ STATUSA ---
+        if (task.getStatus() != null) {
+            holder.tvStatus.setText(task.getStatus().name());
+            updateStatusColor(holder.tvStatus, task.getStatus());
+        }
 
-        // Vizuelni efekat: Precrtan tekst ako je task završen
-        if (task.isCompleted()) {
+        // Klik na status otvara meni za promenu (umesto checkboxa)
+        holder.tvStatus.setOnClickListener(v -> showStatusMenu(v, task));
+
+        // Vizuelni efekat: Precrtan tekst ako je DONE
+        if (task.getStatus() == TaskStatus.DONE) {
             holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             holder.tvTitle.setAlpha(0.5f);
         } else {
@@ -107,27 +111,51 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.tvTitle.setAlpha(1.0f);
         }
 
-        // Listener za promenu statusa (Checkbox)
-        holder.cbCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (statusListener != null) {
-                statusListener.onStatusChanged(task, isChecked);
-            }
-        });
-
-        // Listener za brisanje (Dugi klik)
+        // Postojeći click listeneri
         holder.itemView.setOnLongClickListener(v -> {
-            if (longClickListener != null) {
-                longClickListener.onTaskLongClick(task);
-            }
+            if (longClickListener != null) longClickListener.onTaskLongClick(task);
             return true;
         });
 
-        // DODAJ KLIK NA CELU STAVKU
         holder.itemView.setOnClickListener(v -> {
-            if (clickListener != null) {
-                clickListener.onTaskClick(task);
-            }
+            if (clickListener != null) clickListener.onTaskClick(task);
         });
+    }
+
+    // Pomoćna metoda za Popup meni statusa
+    private void showStatusMenu(View view, Task task) {
+        PopupMenu popup = new PopupMenu(view.getContext(), view);
+        popup.getMenu().add("Postavi: AKTIVAN");
+        popup.getMenu().add("Postavi: URAĐENO");
+        popup.getMenu().add("Postavi: OTKAZANO");
+
+        if (task.getFrequencyType() == FrequencyType.RECURRING) {
+            popup.getMenu().add("Postavi: PAUZIRANO");
+        }
+
+        popup.setOnMenuItemClickListener(item -> {
+            TaskStatus nextStatus;
+            String choice = item.getTitle().toString();
+
+            if (choice.contains("AKTIVAN")) nextStatus = TaskStatus.ACTIVE;
+            else if (choice.contains("URAĐENO")) nextStatus = TaskStatus.DONE;
+            else if (choice.contains("OTKAZANO")) nextStatus = TaskStatus.CANCELLED;
+            else nextStatus = TaskStatus.PAUSED;
+
+            if (statusListener != null) statusListener.onStatusChanged(task, nextStatus);
+            return true;
+        });
+        popup.show();
+    }
+
+    // Pomoćna metoda za boje statusa
+    private void updateStatusColor(TextView tv, TaskStatus status) {
+        switch (status) {
+            case ACTIVE: tv.setTextColor(Color.parseColor("#27AE60")); break;
+            case DONE: tv.setTextColor(Color.GRAY); break;
+            case CANCELLED: tv.setTextColor(Color.RED); break;
+            case PAUSED: tv.setTextColor(Color.parseColor("#F39C12")); break;
+        }
     }
 
     @Override
@@ -136,18 +164,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvTime, tvXp, tvNextOccurrence;
-        CheckBox cbCompleted;
+        TextView tvTitle, tvTime, tvXp, tvNextOccurrence, tvStatus;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTaskTitle);
             tvTime = itemView.findViewById(R.id.tvTaskTime);
             tvXp = itemView.findViewById(R.id.tvTaskXp);
-            tvNextOccurrence = itemView.findViewById(R.id.tvNextOccurrence); // DODATO
-            cbCompleted = itemView.findViewById(R.id.cbCompleted);
+            tvNextOccurrence = itemView.findViewById(R.id.tvNextOccurrence);
+            tvStatus = itemView.findViewById(R.id.tvTaskStatus); // U XML-u promeni cbCompleted u tvTaskStatus (TextView)
         }
     }
-
-
 }

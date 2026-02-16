@@ -50,12 +50,13 @@ public class TasksActivity extends AppCompatActivity {
 
 
         adapter = new TaskAdapter(
-                (task, isChecked) -> {
-                    task.setCompleted(isChecked);
-                    taskViewModel.updateTask(task);
+                (task, newStatus) -> {
+                    task.setStatus(newStatus); // Postavljamo novi status
+                    taskViewModel.updateTask(task); // Šaljemo u bazu
+                    Toast.makeText(this, "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
                 },
                 task -> showDeleteTaskDialog(task),
-                task -> openTaskDetail(task) // DODAJ OVAJ TREĆI PARAMETAR
+                task -> openTaskDetail(task)
         );
         rv.setAdapter(adapter);
 

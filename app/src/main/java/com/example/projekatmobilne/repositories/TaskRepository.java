@@ -6,6 +6,7 @@ import com.example.projekatmobilne.enums.Difficulty;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.Importance;
 import com.example.projekatmobilne.enums.RepeatUnit;
+import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -118,12 +119,19 @@ public class TaskRepository {
                 task.setRecurringDates(dates);
             }
 
+            String statusStr = doc.getString("status");
+            if (statusStr != null) {
+                task.setStatus(TaskStatus.valueOf(statusStr));
+            } else {
+                task.setStatus(TaskStatus.ACTIVE);
+            }
+
         } catch (Exception e) {
             android.util.Log.e("REPO_ERROR", "Greška kod Enuma: " + e.getMessage());
         }
 
         Boolean completed = doc.getBoolean("completed");
-        task.setCompleted(completed != null && completed);
+
 
         return task;
     }

@@ -4,6 +4,7 @@ import com.example.projekatmobilne.enums.Difficulty;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.Importance;
 import com.example.projekatmobilne.enums.RepeatUnit;
+import com.example.projekatmobilne.enums.TaskStatus;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,8 +32,9 @@ public class Task implements Serializable {
 
     private Difficulty difficulty;
     private Importance importance;
+    private TaskStatus status; // NOVO POLJE umesto boolean completed
     private int totalXp;
-    private boolean completed;
+
 
     // Prazan konstruktor (OBAVEZAN za Firestore)
     public Task() {}
@@ -55,8 +57,9 @@ public class Task implements Serializable {
         this.difficulty = difficulty;
         this.importance = importance;
         this.recurringDates = recurringDates;
+        this.status = TaskStatus.ACTIVE;
         this.totalXp = difficulty.getXp() + importance.getXp();
-        this.completed = false;
+
     }
 
     // Konverzija u Map (za Firestore)
@@ -76,7 +79,7 @@ public class Task implements Serializable {
         map.put("difficulty", difficulty.name());
         map.put("importance", importance.name());
         map.put("totalXp", totalXp);
-        map.put("completed", completed);
+        map.put("status", status.name());
         return map;
     }
 
@@ -119,15 +122,14 @@ public class Task implements Serializable {
 
     public Importance getImportance() { return importance; }
     public void setImportance(Importance importance) { this.importance = importance; }
-
+    public TaskStatus getStatus() { return status; }
+    public void setStatus(TaskStatus status) { this.status = status; }
     public int getTotalXp() { return totalXp; }
     public void setTotalXp(int totalXp) { this.totalXp = totalXp; }
 
     public List<Long> getRecurringDates() { return recurringDates; }
     public void setRecurringDates(List<Long> recurringDates) { this.recurringDates = recurringDates; }
 
-    public boolean isCompleted() { return completed; }
-    public void setCompleted(boolean completed) { this.completed = completed; }
 
     public Long getNextOccurrence(long currentTime) {
         if (recurringDates == null || recurringDates.isEmpty()) {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Boja pozadine (biće promenjena programski u adapteru, ovo je default) -->
+    <solid android:color="#b8a7d9" />
+
+    <!-- Koliko su zaobljene ivice -->
+    <corners android:radius="8dp" />
+
+    <!-- Razmak između teksta i ivica badge-a -->
+    <padding
+        android:left="6dp"
+        android:top="2dp"
+        android:right="6dp"
+        android:bottom="2dp" />
+</shape>
