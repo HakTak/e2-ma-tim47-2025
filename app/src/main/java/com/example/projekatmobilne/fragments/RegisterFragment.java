@@ -19,6 +19,15 @@ import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.activities.AuthActivity;
 import com.example.projekatmobilne.viewModels.AuthViewModel;
 
+/**
+ * RegisterFragment - Presentation Layer
+ *
+ * Odgovornosti:
+ * - Prikuplja input od korisnika
+ * - Poziva AuthViewModel za registraciju
+ * - Prikazuje poruke korisniku
+ * - NEMA poslovne logike (to je u AuthService)
+ */
 public class RegisterFragment extends Fragment {
 
     private EditText etEmail, etPassword, etConfirmPassword, etUsername;
@@ -26,7 +35,7 @@ public class RegisterFragment extends Fragment {
     private Button btnRegister;
     private TextView tvGoToLogin;
     private AuthViewModel authViewModel;
-    private String selectedAvatar = "avatar_1"; // Default
+    private String selectedAvatar = "avatar_1";
 
     @Nullable
     @Override
@@ -64,10 +73,7 @@ public class RegisterFragment extends Fragment {
         authViewModel.authStatus.observe(getViewLifecycleOwner(), status -> {
             if ("registration_success".equals(status)) {
                 Toast.makeText(getContext(), R.string.email_verification_sent, Toast.LENGTH_LONG).show();
-
-                // Izloguj korisnika nakon registracije (email nije verifikovan)
                 com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
-
                 ((AuthActivity) requireActivity()).loadFragment(new LoginFragment());
             }
         });
@@ -82,10 +88,8 @@ public class RegisterFragment extends Fragment {
 
     private void setupAvatarSelection() {
         View.OnClickListener avatarClickListener = v -> {
-            // Reset all borders
             resetAvatarBorders();
 
-            // Set selected border
             if (v.getId() == R.id.ivAvatar1) {
                 selectedAvatar = "avatar_1";
                 ivAvatar1.setBackgroundResource(R.drawable.avatar_selected_border);
@@ -128,7 +132,8 @@ public class RegisterFragment extends Fragment {
         String confirmPassword = etConfirmPassword.getText().toString().trim();
         String username = etUsername.getText().toString().trim();
 
-        // Validacija
+        // ===== MINIMALNA VALIDACIJA (proveravanje da li su prazna polja) =====
+        // Detaljna validacija je u AuthService!
         if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || username.isEmpty()) {
             Toast.makeText(getContext(), "Popuni sva polja!", Toast.LENGTH_SHORT).show();
             return;
@@ -139,11 +144,7 @@ public class RegisterFragment extends Fragment {
             return;
         }
 
-        if (password.length() < 6) {
-            Toast.makeText(getContext(), "Lozinka mora imati minimum 6 karaktera!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+        // Poziv ViewModel-a (koji poziva AuthService)
         authViewModel.register(email, password, username, selectedAvatar);
     }
 }

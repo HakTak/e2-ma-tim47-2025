@@ -34,13 +34,6 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    public void updateUser(String userId, Map<String, Object> updates, FirestoreCallback callback) {
-        db.collection("users").document(userId)
-                .update(updates)
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
-    }
-
     // ============ CATEGORIES (DODATO za tvoj Task sistem) ============
     public void createCategory(String userId, Map<String, Object> categoryData, FirestoreCallback callback) {
         db.collection("categories")
@@ -58,5 +51,25 @@ public class FirestoreManager {
     public interface UserCallback {
         void onSuccess(DocumentSnapshot user);
         void onError(String error);
+    }
+    // Dodaj ovu metodu u FirestoreManager.java
+
+    /**
+     * Ažurira specifična polja korisnika u Firestore-u
+     */
+    public void updateUser(String userId, Map<String, Object> updates, FirestoreCallback callback) {
+        db.collection("users")
+                .document(userId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) {
+                        callback.onSuccess();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) {
+                        callback.onError(e.getMessage());
+                    }
+                });
     }
 }

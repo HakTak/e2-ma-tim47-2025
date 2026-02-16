@@ -123,4 +123,11 @@
     <string name="cancel">Otkaži</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="ponovo_unesi_novu_lozinku">Ponovo unesi novu lozinku</string>
+    <string name="potvrdi">Potvrdi</string>
+    <string name="stara_lozinka">Stara lozinka</string>
+    <string name="unesi_staru_lozinku">Unesi staru lozinku</string>
+    <string name="nova_lozinka">Nova lozinka</string>
+    <string name="unesi_novu_lozinku">Unesi novu lozinku</string>
+    <string name="potvrdi_novu_lozinku">Potvrdi novu lozinku</string>
 </resources>

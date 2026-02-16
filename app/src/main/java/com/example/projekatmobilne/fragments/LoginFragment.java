@@ -20,6 +20,15 @@ import com.example.projekatmobilne.activities.AuthActivity;
 import com.example.projekatmobilne.activities.HomeActivity;
 import com.example.projekatmobilne.viewModels.AuthViewModel;
 
+/**
+ * LoginFragment - Presentation Layer
+ *
+ * Odgovornosti:
+ * - Prikuplja input od korisnika
+ * - Poziva AuthViewModel za login
+ * - Prikazuje poruke korisniku
+ * - NEMA poslovne logike (to je u AuthService)
+ */
 public class LoginFragment extends Fragment {
 
     private EditText etEmail, etPassword;
@@ -68,11 +77,14 @@ public class LoginFragment extends Fragment {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
+        // ===== MINIMALNA VALIDACIJA =====
+        // Detaljnija validacija je u AuthService!
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(getContext(), "Popuni sva polja!", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Poziv ViewModel-a (koji poziva AuthService)
         authViewModel.login(email, password);
     }
 }

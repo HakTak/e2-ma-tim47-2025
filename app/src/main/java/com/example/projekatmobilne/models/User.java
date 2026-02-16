@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public class User {
-    private String id;  // ← PROMENIO userId u id
+    private String id;
     private String username;
     private String email;
     private String avatar;
@@ -15,6 +15,7 @@ public class User {
     private int pp;
     private int xp;
     private int coins;
+
     // Statistika
     private int activeDays; // Broj dana aktivnosti
     private int tasksCreated; // Ukupno kreiranih taskova
@@ -22,7 +23,11 @@ public class User {
     private int tasksCancelled; // Ukupno otkazanih
     private int longestStreak; // Najduži niz
     private int currentStreak; // Trenutni niz
-    private long lastActivityDate; // Zadnji dan aktivnosti (za streak)
+    private long lastActivityDate; // Zadnji dan aktivnosti (timestamp u milisekundama)
+
+    // ===== NOVO: XP History (poslednjih 7 dana) =====
+    private Map<String, Integer> xpHistory; // key: "yyyy-MM-dd", value: XP za taj dan
+
     private List<String> badges;
     private List<String> equipment;
     private long createdAt;
@@ -31,13 +36,14 @@ public class User {
     public User() {
         this.badges = new ArrayList<>();
         this.equipment = new ArrayList<>();
-        this.activeDays = 0;          // DODATO
-        this.tasksCreated = 0;        // DODATO
-        this.tasksCompleted = 0;      // DODATO
-        this.tasksCancelled = 0;      // DODATO
-        this.longestStreak = 0;       // DODATO
-        this.currentStreak = 0;       // DODATO
-        this.lastActivityDate = 0;    // DODATO
+        this.xpHistory = new HashMap<>(); // NOVO
+        this.activeDays = 0;
+        this.tasksCreated = 0;
+        this.tasksCompleted = 0;
+        this.tasksCancelled = 0;
+        this.longestStreak = 0;
+        this.currentStreak = 0;
+        this.lastActivityDate = 0;
     }
 
     // Konstruktor za kreiranje novog usera
@@ -53,9 +59,10 @@ public class User {
         this.coins = 0;
         this.badges = new ArrayList<>();
         this.equipment = new ArrayList<>();
+        this.xpHistory = new HashMap<>(); // NOVO
         this.createdAt = System.currentTimeMillis();
 
-        // Statistika (DODATO)
+        // Statistika
         this.activeDays = 0;
         this.tasksCreated = 0;
         this.tasksCompleted = 0;
@@ -68,7 +75,7 @@ public class User {
     // Konverzija u Map (za Firestore)
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put("id", id);  // ← PROMENIO
+        map.put("id", id);
         map.put("username", username);
         map.put("email", email);
         map.put("avatar", avatar);
@@ -87,13 +94,14 @@ public class User {
         map.put("longestStreak", longestStreak);
         map.put("currentStreak", currentStreak);
         map.put("lastActivityDate", lastActivityDate);
+        map.put("xpHistory", xpHistory); // NOVO
 
         return map;
     }
 
     // GETTERS & SETTERS
-    public String getId() { return id; }  // ← PROMENIO getUserId() u getId()
-    public void setId(String id) { this.id = id; }  // ← PROMENIO
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -124,6 +132,10 @@ public class User {
 
     public List<String> getEquipment() { return equipment; }
     public void setEquipment(List<String> equipment) { this.equipment = equipment; }
+
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+
     // Statistika getters & setters
     public int getActiveDays() { return activeDays; }
     public void setActiveDays(int activeDays) { this.activeDays = activeDays; }
@@ -145,6 +157,12 @@ public class User {
 
     public long getLastActivityDate() { return lastActivityDate; }
     public void setLastActivityDate(long lastActivityDate) { this.lastActivityDate = lastActivityDate; }
-    public long getCreatedAt() { return createdAt; }
-    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+
+    // ===== NOVO: XP History =====
+    public Map<String, Integer> getXpHistory() {
+        return xpHistory != null ? xpHistory : new HashMap<>();
+    }
+    public void setXpHistory(Map<String, Integer> xpHistory) {
+        this.xpHistory = xpHistory;
+    }
 }
