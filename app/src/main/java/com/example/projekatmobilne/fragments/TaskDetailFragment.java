@@ -26,11 +26,13 @@ import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 
+import androidx.fragment.app.DialogFragment;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class TaskDetailFragment extends Fragment {
+public class TaskDetailFragment extends DialogFragment  {
 
     private static final String ARG_TASK = "task_obj";
     private TaskViewModel taskViewModel;
@@ -68,6 +70,16 @@ public class TaskDetailFragment extends Fragment {
         updateUI(v);
 
         return v;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Ovo osigurava da dijalog bude providan i centriran, bez čudnih okvira
+        if (getDialog() != null && getDialog().getWindow() != null) {
+            getDialog().getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            getDialog().getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void updateUI(View v) {
@@ -161,7 +173,7 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void dismissFragment() {
-        getParentFragmentManager().beginTransaction().remove(this).commit();
+        dismiss();
     }
 
     // PREVODI

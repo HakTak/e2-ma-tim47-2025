@@ -115,11 +115,8 @@ public class TasksActivity extends AppCompatActivity {
 
     private void openTaskDetail(Task task) {
         TaskDetailFragment fragment = TaskDetailFragment.newInstance(task);
-        getSupportFragmentManager().beginTransaction()
-                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out) // Lepa animacija
-                .replace(R.id.fragmentContainer, fragment)
-                .addToBackStack(null) // Omogućava da se vratiš nazad na dugme 'back'
-                .commit();
+        // Koristimo getSupportFragmentManager() jer smo u Activity-ju
+        fragment.show(getSupportFragmentManager(), "task_detail");
     }
 
     // 5. Metoda za prikaz Popup menija

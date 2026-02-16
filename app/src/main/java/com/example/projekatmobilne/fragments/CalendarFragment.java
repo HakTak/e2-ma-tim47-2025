@@ -151,9 +151,6 @@ public class CalendarFragment extends Fragment {
 
     private void openTaskDetail(Task task) {
         TaskDetailFragment fragment = TaskDetailFragment.newInstance(task);
-        getParentFragmentManager().beginTransaction()
-                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-                .replace(R.id.calendarDetailContainer, fragment)
-                .addToBackStack(null).commit();
+        fragment.show(getChildFragmentManager(), "task_detail");
     }
 }
