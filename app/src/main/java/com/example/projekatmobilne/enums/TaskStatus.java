@@ -5,5 +5,6 @@ public enum TaskStatus {
     DONE,      // Urađen
     FAILED,    // Neurađen (sistemski/automatski)
     PAUSED,    // Pauziran (samo za ponavljajuće)
-    CANCELLED  // Otkazan
+    CANCELLED,  // Otkazan
+    UPCOMING  // Sto bi se reklo nadolazece obaveze
 }

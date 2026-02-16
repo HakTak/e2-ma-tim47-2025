@@ -77,8 +77,17 @@ public class TaskDetailFragment extends DialogFragment  {
         super.onStart();
         // Ovo osigurava da dijalog bude providan i centriran, bez čudnih okvira
         if (getDialog() != null && getDialog().getWindow() != null) {
+            // 1. Čini prozor samog dijaloga providnim (rešava crne ćoškove)
             getDialog().getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-            getDialog().getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
+            // 2. Postavlja širinu dijaloga na skoro ceo ekran
+            getDialog().getWindow().setLayout(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+
+            // 3. Opciono: Zatamnjenje pozadine (ono što si tražio)
+            getDialog().getWindow().setDimAmount(0.7f); // Vrednost od 0 do 1
         }
     }
 
@@ -183,6 +192,7 @@ public class TaskDetailFragment extends DialogFragment  {
             case DONE: return "URAĐENO";
             case PAUSED: return "PAUZIRANO";
             case CANCELLED: return "OTKAZANO";
+            case UPCOMING: return "NADOLAZEĆI";
             default: return "AKTIVAN";
         }
     }
@@ -193,6 +203,7 @@ public class TaskDetailFragment extends DialogFragment  {
             case DONE: return Color.GRAY;
             case CANCELLED: return Color.RED;
             case PAUSED: return Color.parseColor("#F39C12");
+            case UPCOMING: return Color.parseColor("#9B59B6");
             default: return Color.parseColor("#27AE60");
         }
     }

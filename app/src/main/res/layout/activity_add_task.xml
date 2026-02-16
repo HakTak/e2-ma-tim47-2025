@@ -86,6 +86,15 @@
             android:entries="@array/frequency_array"
             android:layout_marginBottom="12dp"/>
 
+        <Button
+            android:id="@+id/btnPickDate"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Izaberi datum izvršenja"
+            android:visibility="visible"
+            app:icon="@android:drawable/ic_menu_my_calendar"/>
+
         <!-- DINAMIČKI PANEL: Prikazuje se samo ako je ponavljajuće -->
         <LinearLayout
             android:id="@+id/layoutRecurringOptions"
