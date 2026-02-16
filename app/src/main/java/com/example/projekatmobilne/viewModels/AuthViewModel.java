@@ -5,47 +5,35 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 
-import com.example.projekatmobilne.database.FirebaseAuthManager;
-import com.example.projekatmobilne.database.FirestoreManager;
-import com.example.projekatmobilne.models.User;
+import com.example.projekatmobilne.services.AuthService;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
 
+/**
+ * AuthViewModel - Presentation Logic Layer za autentifikaciju
+ *
+ * Odgovornosti:
+ * - Izlaže podatke UI sloju (Fragment/Activity)
+ * - Poziva AuthService za poslovnu logiku
+ * - Upravlja LiveData objektima
+ */
 public class AuthViewModel extends AndroidViewModel {
 
-    private final FirebaseAuthManager authManager;
-    private final FirestoreManager firestoreManager;
-    private final SharedPrefsManager prefsManager;
-
+    private final AuthService authService;
     public MutableLiveData<String> authStatus = new MutableLiveData<>();
     public MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
     public AuthViewModel(@NonNull Application application) {
         super(application);
-        this.authManager = new FirebaseAuthManager();
-        this.firestoreManager = new FirestoreManager();
-        this.prefsManager = new SharedPrefsManager(application);
+        SharedPrefsManager prefsManager = new SharedPrefsManager(application);
+        this.authService = new AuthService(prefsManager);
     }
 
     // REGISTER
     public void register(String email, String password, String username, String avatar) {
-        authManager.register(email, password, new FirebaseAuthManager.RegisterCallback() {
+        authService.register(email, password, username, avatar, new AuthService.AuthCallback() {
             @Override
-            public void onSuccess(String userId) {
-                // Kreiraj User objekat
-                User newUser = new User(userId, username, email, avatar);
-
-                // Spremi u Firestore
-                firestoreManager.createUser(userId, newUser.toMap(), new FirestoreManager.FirestoreCallback() {
-                    @Override
-                    public void onSuccess() {
-                        authStatus.postValue("registration_success");
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        errorMessage.postValue(error);
-                    }
-                });
+            public void onSuccess(String status) {
+                authStatus.postValue(status);
             }
 
             @Override
@@ -57,27 +45,10 @@ public class AuthViewModel extends AndroidViewModel {
 
     // LOGIN
     public void login(String email, String password) {
-        authManager.login(email, password, new FirebaseAuthManager.LoginCallback() {
+        authService.login(email, password, new AuthService.AuthCallback() {
             @Override
-            public void onSuccess(String userId) {
-                // Učitaj user podatke iz Firestore
-                firestoreManager.getUser(userId, new FirestoreManager.UserCallback() {
-                    @Override
-                    public void onSuccess(com.google.firebase.firestore.DocumentSnapshot snapshot) {
-                        String username = snapshot.getString("username");
-                        String avatar = snapshot.getString("avatar");
-                        int level = snapshot.getLong("level").intValue();
-
-                        // Spremi session
-                        prefsManager.saveSession(userId, username, avatar, level);
-                        authStatus.postValue("login_success");
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        errorMessage.postValue(error);
-                    }
-                });
+            public void onSuccess(String status) {
+                authStatus.postValue(status);
             }
 
             @Override
@@ -89,8 +60,7 @@ public class AuthViewModel extends AndroidViewModel {
 
     // LOGOUT
     public void logout() {
-        authManager.logout();
-        prefsManager.clearSession();
+        authService.logout();
         authStatus.postValue("logged_out");
     }
 }

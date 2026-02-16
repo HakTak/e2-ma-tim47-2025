@@ -6,6 +6,7 @@ import android.view.MenuItem;
 import android.view.Menu;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
@@ -18,6 +19,7 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.services.UserService;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -28,6 +30,7 @@ public class HomeActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private NavController navController;
     private SharedPrefsManager prefsManager;
+    private UserService userService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +38,13 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
 
         prefsManager = new SharedPrefsManager(this);
+        userService = new UserService();
+
+        // ===== REFAKTORISANO: Koristi UserService za activity tracking =====
+        String userId = prefsManager.getUserId();
+        if (userId != null && !userId.isEmpty()) {
+            userService.checkDailyActivity(userId);
+        }
 
         // Toolbar setup
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -69,9 +79,22 @@ public class HomeActivity extends AppCompatActivity {
             }
             return true;
         });
+
+        // ===== NOVO: Moderan način za back press handling =====
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    // Pozovi default behavior (izađi iz app-a)
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
     }
 
-    // Toolbar overflow menu (3 tačke)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
@@ -87,17 +110,13 @@ public class HomeActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // Logout dialog
     private void showLogoutDialog() {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.drawer_logout)
                 .setMessage(R.string.logout_confirm)
                 .setPositiveButton(R.string.yes, (dialog, which) -> {
-                    // Firebase logout
                     FirebaseAuth.getInstance().signOut();
-                    // Clear session
                     prefsManager.clearSession();
-                    // Redirect to AuthActivity
                     Intent intent = new Intent(HomeActivity.this, AuthActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
@@ -105,15 +124,5 @@ public class HomeActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
-    }
-
-    // Back button zatvara drawer ako je otvoren
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
     }
 }

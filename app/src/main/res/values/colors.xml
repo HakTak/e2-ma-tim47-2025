@@ -12,6 +12,7 @@
     <!-- Text Colors -->
     <color name="text_primary">#2D3436</color>
     <color name="text_secondary">#636E72</color>
+    <color name="text_tertiary">#81e1fc</color>
     <color name="text_hint">#999999</color>
 
     <!-- Basic Colors -->
@@ -22,4 +23,11 @@
     <color name="success_green">#4CAF50</color>
     <color name="error_red">#F44336</color>
     <color name="warning_orange">#FF9800</color>
+
+    <!-- ===== NOVO: Chart Colors ===== -->
+    <color name="chart_completed">#4CAF50</color>
+    <color name="chart_created">#2196F3</color>
+    <color name="chart_cancelled">#FF9800</color>
+    <color name="chart_unfinished">#F44336</color>
+    <color name="chart_xp">#6200EE</color>
 </resources>
