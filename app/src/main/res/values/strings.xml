@@ -93,6 +93,7 @@
     <string name="drawer_tasks">Zadaci</string>
     <string name="drawer_statistics">Statistika</string>
     <string name="drawer_logout">Odjavi se</string>
+    <string name="drawer_calendar">Kalendar</string>
 
     <!-- PROFILE -->
     <string name="level">Nivo</string>

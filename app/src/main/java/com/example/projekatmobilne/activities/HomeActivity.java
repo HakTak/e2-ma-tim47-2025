@@ -32,8 +32,10 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        com.jakewharton.threetenabp.AndroidThreeTen.init(this);
         setContentView(R.layout.activity_home);
 
+        // Inicijalizacija managera
         prefsManager = new SharedPrefsManager(this);
 
         // Toolbar setup
@@ -44,7 +46,7 @@ public class HomeActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
 
-        // Hamburger icon
+        // Hamburger icon (Toggle)
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open,
@@ -53,31 +55,41 @@ public class HomeActivity extends AppCompatActivity {
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Navigation Component
-        navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+        // Navigation Component Setup
+        // Ovde koristimo polje klase 'this.navController' umesto redefinisanja nove promenljive
+        this.navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupWithNavController(navigationView, navController);
 
         // Handle drawer item clicks
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
+            // 1. Poseban handling za Tasks (jer otvara novu Aktivnost)
             if (id == R.id.nav_tasks) {
                 startActivity(new Intent(this, TasksActivity.class));
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
             }
 
+            // 2. Poseban handling za Logout (jer otvara Dialog)
             if (id == R.id.nav_logout) {
                 showLogoutDialog();
-            } else {
-                NavigationUI.onNavDestinationSelected(item, navController);
+                return true;
+            }
+
+            // 3. Automatski handling za fragmente (Profil, Kategorije, Statistika, Kalendar)
+            // NavigationUI će na osnovu ID-ja iz menija pronaći destinaciju u nav_graph.xml
+            boolean handled = NavigationUI.onNavDestinationSelected(item, navController);
+
+            if (handled) {
                 drawerLayout.closeDrawer(GravityCompat.START);
             }
-            return true;
+
+            return handled;
         });
     }
 
-    // Toolbar overflow menu (3 tačke)
+    // Toolbar overflow menu (3 tačke u uglu)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
@@ -113,10 +125,10 @@ public class HomeActivity extends AppCompatActivity {
                 .show();
     }
 
-    // Back button zatvara drawer ako je otvoren
+    // Back button zatvara drawer ako je otvoren, inače radi standardni back
     @Override
     public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
