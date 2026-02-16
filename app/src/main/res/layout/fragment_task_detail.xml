@@ -1,110 +1,288 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="#CC000000"
     android:clickable="true"
-    android:focusable="true"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:focusable="true" >
+
+    <com.google.android.material.card.MaterialCardView
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_gravity="center"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="16dp">
+
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="vertical"
+android:padding="24dp">
+
+<!-- Relativni layout za naslov i X dugme -->
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
 
     <TextView
         android:id="@+id/tvDetailTitle"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Naslov zadatka"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#2D3436"/>
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@id/btnCloseDetail"
+        android:text="Naslov"
+        android:textColor="#2D3436"
+        android:textSize="22sp"
+        android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/tvDetailDesc"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Opis zadatka ide ovde..."
-        android:textSize="16sp"
-        android:textColor="#636E72"/>
+    <ImageButton
+        android:id="@+id/btnCloseDetail"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentEnd="true"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Zatvori detalje"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        app:tint="#636E72" />
+</RelativeLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#DFE6E9"
-        android:layout_marginVertical="16dp"/>
+<TextView
+    android:id="@+id/tvDetailDesc"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:text="Opis zadatka..."
+    android:textColor="#636E72"
+    android:textSize="15sp" />
 
+<View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_marginVertical="16dp"
+    android:background="#F1F2F6" />
+
+<GridLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:columnCount="2"
+    android:rowCount="3">
+
+    <!-- Zadatak 1: STATUS (Dodat ID layoutStatusClick da bi bio klikabilan) -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/layoutStatusClick"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_marginBottom="12dp"
         android:orientation="vertical"
-        android:layout_marginTop="8dp">
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
 
-        <!-- STATUS (Hardkodovano) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="STATUS (Klikni)"
+            android:textColor="#B2BEC3"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
         <TextView
             android:id="@+id/tvDetailStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Status: AKTIVAN"
+            android:text="Aktivan"
             android:textColor="#27AE60"
-            android:textStyle="bold"
-            android:paddingBottom="4dp"/>
+            android:textStyle="bold" />
+    </LinearLayout>
 
-        <!-- KATEGORIJA -->
+    <!-- VREME IZVRŠAVANJA -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical">
+
         <TextView
-            android:id="@+id/tvDetailCategory"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kategorija: Loading..."
-            android:textColor="#2D3436"
-            android:paddingBottom="4dp"/>
+            android:text="VREME IZVRŠAVANJA"
+            android:textColor="#B2BEC3"
+            android:textSize="10sp"
+            android:textStyle="bold" />
 
-        <!-- TEŽINA -->
+        <TextView
+            android:id="@+id/tvDetailExecutionTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="14:30"
+            android:textColor="#2D3436" />
+    </LinearLayout>
+
+    <!-- TEŽINA -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TEŽINA"
+            android:textColor="#B2BEC3"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
         <TextView
             android:id="@+id/tvDetailDifficulty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Težina: Srednje"
-            android:textColor="#2D3436"
-            android:paddingBottom="4dp"/>
+            android:text="Srednje"
+            android:textColor="#2D3436" />
+    </LinearLayout>
 
-        <!-- BITNOST -->
+    <!-- BITNOST -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BITNOST"
+            android:textColor="#B2BEC3"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
         <TextView
             android:id="@+id/tvDetailImportance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bitnost: Visoka"
-            android:textColor="#2D3436"
-            android:paddingBottom="4dp"/>
+            android:text="Visoka"
+            android:textColor="#2D3436" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvDetailXp"
-        android:layout_width="wrap_content"
+    <!-- KATEGORIJA -->
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Vrednost: 50 XP"
-        android:textStyle="bold"
-        android:textColor="#6200EE"/>
+        android:layout_columnWeight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvDetailFrequency"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Učestalost: Ponavljajuće"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="KATEGORIJA"
+            android:textColor="#B2BEC3"
+            android:textSize="10sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/tvDetailDates"
-        android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvDetailCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Učenje"
+            android:textColor="#6200EE"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- UČESTALOST -->
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Svi datumi ponavljanja: \n- 01.08.2025\n- 07.08.2025"
-        android:textSize="14sp"/>
+        android:layout_columnWeight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="UČESTALOST"
+            android:textColor="#B2BEC3"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvDetailFrequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ponavljajuće"
+            android:textColor="#2D3436" />
+    </LinearLayout>
+</GridLayout>
+
+<View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_marginVertical="16dp"
+    android:background="#F1F2F6" />
+
+<TextView
+    android:id="@+id/tvDetailXp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:background="#D35400"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="4dp"
+    android:text="+50 XP"
+    android:textColor="#FFFFFF"
+    android:textStyle="bold" />
+
+<TextView
+    android:id="@+id/tvDetailDates"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:gravity="center_horizontal"
+    android:text="Planirani datumi..."
+    android:textColor="#B2BEC3"
+    android:textSize="11sp" />
+
+<View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_marginVertical="16dp"
+    android:background="#F1F2F6" />
+
+<!-- Zadatak 3: DUGMAD ZA AKCIJU -->
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:weightSum="2">
 
     <Button
-        android:id="@+id/btnCloseDetail"
-        android:layout_width="match_parent"
+        android:id="@+id/btnEditTask"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="ZATVORI"
-        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+        android:layout_weight="1"
+        android:layout_marginEnd="8dp"
+        android:text="IZMENI"
+        app:icon="@android:drawable/ic_menu_edit" />
+
+    <Button
+        android:id="@+id/btnDeleteTask"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="OBRIŠI"
+        android:textColor="#C0392B"
+        app:strokeColor="#C0392B"
+        app:iconTint="#C0392B"
+        app:icon="@android:drawable/ic_menu_delete" />
+</LinearLayout>
 
 </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>

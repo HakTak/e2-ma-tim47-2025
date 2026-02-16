@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
+import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
 
@@ -29,6 +30,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private OnTaskStatusChangeListener statusListener;
     private OnTaskLongClickListener longClickListener;
     private OnTaskClickListener clickListener;
+    private List<Category> categories = new ArrayList<>();
 
     public interface OnTaskStatusChangeListener {
         void onStatusChanged(Task task, TaskStatus newStatus);
@@ -120,8 +122,25 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.itemView.setOnClickListener(v -> {
             if (clickListener != null) clickListener.onTaskClick(task);
         });
+
+
+        // Pronađi boju kategorije
+        String categoryColor = "#FFFFFF"; // Default bela
+        for (Category c : categories) {
+            if (c.getId().equals(task.getCategoryId())) {
+                categoryColor = c.getColorHex(); // Uzimamo boju iz modela kategorije
+                break;
+            }
+        }
+
+        holder.cardView.setCardBackgroundColor(Color.parseColor(categoryColor));
     }
 
+
+    public void setCategories(List<Category> categories) {
+        this.categories = categories;
+        notifyDataSetChanged();
+    }
     // Pomoćna metoda za Popup meni statusa
     private void showStatusMenu(View view, Task task) {
         PopupMenu popup = new PopupMenu(view.getContext(), view);
@@ -164,6 +183,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
+        com.google.android.material.card.MaterialCardView cardView;
         TextView tvTitle, tvTime, tvXp, tvNextOccurrence, tvStatus;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -172,7 +192,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTime = itemView.findViewById(R.id.tvTaskTime);
             tvXp = itemView.findViewById(R.id.tvTaskXp);
             tvNextOccurrence = itemView.findViewById(R.id.tvNextOccurrence);
-            tvStatus = itemView.findViewById(R.id.tvTaskStatus); // U XML-u promeni cbCompleted u tvTaskStatus (TextView)
+            tvStatus = itemView.findViewById(R.id.tvTaskStatus);
+            cardView = (com.google.android.material.card.MaterialCardView) itemView;// U XML-u promeni cbCompleted u tvTaskStatus (TextView)
         }
     }
 }

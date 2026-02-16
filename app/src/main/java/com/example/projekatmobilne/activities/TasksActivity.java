@@ -19,6 +19,7 @@ import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.fragments.TaskDetailFragment;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -87,6 +88,14 @@ public class TasksActivity extends AppCompatActivity {
             Intent intent = new Intent(TasksActivity.this, AddTaskActivity.class);
             intent.putExtra("CATEGORY_ID", categoryId);
             startActivity(intent);
+        });
+
+        // U onCreate u TasksActivity.java, dodaj observer za kategorije:
+        CategoryViewModel categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
+        categoryViewModel.getAllCategories().observe(this, cats -> {
+            if (cats != null) {
+                adapter.setCategories(cats); // Šaljemo kategorije u adapter da bi znao boje
+            }
         });
     }
 

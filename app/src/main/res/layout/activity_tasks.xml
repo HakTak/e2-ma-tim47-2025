@@ -22,7 +22,10 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Filter"
         android:src="@android:drawable/ic_menu_sort_by_size"
-        app:tint="#6200EE" />
+        app:tint="#6200EE"
+        android:paddingTop="20dp"
+        android:layout_marginTop="20dp"/>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewTasks"
@@ -46,6 +49,8 @@
     <FrameLayout
         android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_marginTop="20dp"/>
+
 
 </RelativeLayout>
