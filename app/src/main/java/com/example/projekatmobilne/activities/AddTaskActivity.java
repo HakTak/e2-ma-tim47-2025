@@ -362,17 +362,35 @@ public class AddTaskActivity extends AppCompatActivity {
     }
 
     private void updateExistingTask() {
+        // Ažuriraj metapodatke — važe za ceo task
         editingTask.setTitle(etTitle.getText().toString().trim());
         editingTask.setDescription(etDescription.getText().toString().trim());
 
-        // Spoji stari datum sa novim vremenom kroz servis
-        long updatedTime = taskService.mergeDateTime(
-                editingTask.getExecutionTime(), selectedExecutionTime);
-        editingTask.setExecutionTime(updatedTime);
-
+        // Ažuriraj težinu i bitnost
         editingTask.setDifficulty(Difficulty.valueOf(spinnerDifficulty.getSelectedItem().toString()));
         editingTask.setImportance(Importance.valueOf(spinnerImportance.getSelectedItem().toString()));
         editingTask.setTotalXp(editingTask.getDifficulty().getXp() + editingTask.getImportance().getXp());
+
+        if (editingTask.getFrequencyType() == FrequencyType.ONE_TIME) {
+            // Jednokratni: spoji stari datum sa novim vremenom
+            long updatedTime = taskService.mergeDateTime(
+                    editingTask.getExecutionTime(), selectedExecutionTime);
+            editingTask.setExecutionTime(updatedTime);
+
+        } else {
+            // Recurring: ažuriraj vreme SAMO za buduće ACTIVE datume
+            Calendar newTimeCal = Calendar.getInstance();
+            newTimeCal.setTimeInMillis(selectedExecutionTime);
+            int newHour   = newTimeCal.get(Calendar.HOUR_OF_DAY);
+            int newMinute = newTimeCal.get(Calendar.MINUTE);
+
+            taskService.updateFutureOccurrenceTimes(editingTask, newHour, newMinute);
+
+            // Ažuriraj i executionTime na tasku (referentno vreme)
+            long updatedTime = taskService.mergeDateTime(
+                    editingTask.getExecutionTime(), selectedExecutionTime);
+            editingTask.setExecutionTime(updatedTime);
+        }
 
         taskViewModel.updateTask(editingTask);
         Toast.makeText(this, "Izmene sačuvane!", Toast.LENGTH_SHORT).show();
