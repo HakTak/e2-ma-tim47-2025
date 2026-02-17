@@ -73,7 +73,13 @@ public class HomeActivity extends AppCompatActivity {
 
             if (id == R.id.nav_logout) {
                 showLogoutDialog();
-            } else {
+            }
+            else if (id == R.id.nav_tasks) {
+                Intent intent = new Intent(HomeActivity.this, TasksActivity.class);
+                startActivity(intent);
+                drawerLayout.closeDrawer(GravityCompat.START);
+            }
+            else {
                 NavigationUI.onNavDestinationSelected(item, navController);
                 drawerLayout.closeDrawer(GravityCompat.START);
             }

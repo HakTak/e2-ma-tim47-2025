@@ -5,20 +5,34 @@
     android:layout_height="match_parent"
     android:background="#F8F9FA">
 
-    <TextView
+ <!--   <TextView
         android:id="@+id/tvCategoryTasksTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="16dp"
         android:text="Kategorija"
         android:textSize="24sp"
-        android:textStyle="bold" />
+        android:textStyle="bold" /> -->
+    <ImageButton
+        android:id="@+id/btnFilterTasks"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Filter"
+        android:src="@android:drawable/ic_menu_sort_by_size"
+        app:tint="#6200EE"
+        android:paddingTop="20dp"
+        android:layout_marginTop="20dp"/>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewTasks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/tvCategoryTasksTitle" />
+        android:layout_below="@id/btnFilterTasks"
+        android:paddingTop="8dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnAddTask"
@@ -31,5 +45,12 @@
         app:backgroundTint="#6200EE"
         app:tint="@color/white"
         android:contentDescription="Add Task" />
+
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="20dp"/>
+
 
 </RelativeLayout>

@@ -1,15 +1,12 @@
 package com.example.projekatmobilne.repositories;
 
-import com.example.projekatmobilne.enums.Difficulty;
-import com.example.projekatmobilne.enums.FrequencyType;
-import com.example.projekatmobilne.enums.Importance;
-import com.example.projekatmobilne.enums.RepeatUnit;
+import android.util.Log;
+import com.example.projekatmobilne.enums.*;
 import com.example.projekatmobilne.models.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class TaskRepository {
 
@@ -21,18 +18,28 @@ public class TaskRepository {
 
     // GET ALL TASKS (za specifičnog usera)
     public void getAllTasks(String userId, TasksCallback callback) {
+        Log.d("FIRESTORE_RETIREVE", "Pokrećem query za userId: " + userId);
+
         db.collection("tasks")
                 .whereEqualTo("userId", userId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
+                    Log.d("FIRESTORE_RETIREVE", "Uspeh! Broj dokumenata: " + querySnapshot.size());
                     List<Task> tasks = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : querySnapshot) {
-                        Task task = documentToTask(doc);
-                        tasks.add(task);
+                        try {
+                            Task task = documentToTask(doc);
+                            tasks.add(task);
+                        } catch (Exception e) {
+                            Log.e("FIRESTORE_RETIREVE", "Greška pri konverziji dokumenta: " + e.getMessage());
+                        }
                     }
                     callback.onTasksLoaded(tasks);
                 })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    Log.e("FIRESTORE_RETIREVE", "Greška u query-ju: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
     // INSERT TASK
@@ -45,10 +52,119 @@ public class TaskRepository {
 
     // UPDATE TASK
     public void updateTask(Task task, UpdateCallback callback) {
+        Map<String, Object> taskMap = task.toMap();
+        // >>> DODAJ LOG DA VIDIŠ ŠTA SE ŠALJE <
+        Log.d("REPO_UPDATE", "===== UPDATING TASK =====");
+        Log.d("REPO_UPDATE", "Task ID: " + task.getId());
+        Log.d("REPO_UPDATE", "Task Title: " + task.getTitle());
+        Log.d("REPO_UPDATE", "occurrenceStatuses u mapi: " + taskMap.get("occurrenceStatuses"));
+        Log.d("REPO_UPDATE", "=========================");
+
         db.collection("tasks").document(task.getId())
-                .set(task.toMap())
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .set(taskMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("REPO_UPDATE", "✅ Task uspešno ažuriran u Firestore!");
+                    callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("REPO_UPDATE", "❌ Greška pri ažuriranju: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    public void getTaskById(String taskId, TaskByIdCallback callback) {
+        Log.d("REPO_DEBUG", "Tražim task sa ID: " + taskId);
+
+        db.collection("tasks")
+                .document(taskId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        try {
+                            // >>> FIX: Direktno parsiranje bez kastovanja <
+                            Task task = documentSnapshotToTask(documentSnapshot);
+                            Log.d("REPO_DEBUG", "Task pronađen: " + task.getTitle());
+                            callback.onTaskLoaded(task);
+                        } catch (Exception e) {
+                            Log.e("REPO_DEBUG", "Greška pri parsiranju: " + e.getMessage());
+                            callback.onError(e.getMessage());
+                        }
+                    } else {
+                        Log.e("REPO_DEBUG", "Task sa ID " + taskId + " ne postoji!");
+                        callback.onError("Task nije pronađen");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("REPO_DEBUG", "Greška pri učitavanju: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    // >>> NOVA HELPER METODA: DocumentSnapshot → Task <
+    private Task documentSnapshotToTask(DocumentSnapshot doc) {
+        Task task = new Task();
+
+        // >>> FIX: doc.getId() radi na DocumentSnapshot <
+        task.setId(doc.getId());
+        task.setUserId(doc.getString("userId"));
+        task.setCategoryId(doc.getString("categoryId"));
+        task.setTitle(doc.getString("title"));
+        task.setDescription(doc.getString("description"));
+
+        Long xpLong = doc.getLong("totalXp");
+        task.setTotalXp(xpLong != null ? xpLong.intValue() : 0);
+
+        Long execTime = doc.getLong("executionTime");
+        task.setExecutionTime(execTime != null ? execTime : 0L);
+
+        task.setRepeatStartDate(doc.getLong("repeatStartDate"));
+        task.setRepeatEndDate(doc.getLong("repeatEndDate"));
+
+        Long intervalLong = doc.getLong("repeatInterval");
+        task.setRepeatInterval(intervalLong != null ? intervalLong.intValue() : null);
+
+        try {
+            String freq = doc.getString("frequencyType");
+            if (freq != null) task.setFrequencyType(FrequencyType.valueOf(freq));
+            else task.setFrequencyType(FrequencyType.ONE_TIME);
+
+            String diff = doc.getString("difficulty");
+            if (diff != null) task.setDifficulty(Difficulty.valueOf(diff));
+
+            String imp = doc.getString("importance");
+            if (imp != null) task.setImportance(Importance.valueOf(imp));
+
+            String unit = doc.getString("repeatUnit");
+            if (unit != null) task.setRepeatUnit(RepeatUnit.valueOf(unit));
+
+            List<Long> dates = (List<Long>) doc.get("recurringDates");
+            if (dates != null) task.setRecurringDates(dates);
+
+            String statusStr = doc.getString("status");
+            task.setStatus(statusStr != null ? TaskStatus.valueOf(statusStr) : TaskStatus.ACTIVE);
+
+            Map<String, Object> occurrenceStatusesRaw = (Map<String, Object>) doc.get("occurrenceStatuses");
+            if (occurrenceStatusesRaw != null) {
+                Map<String, String> occurrenceStatuses = new HashMap<>();
+                for (Map.Entry<String, Object> entry : occurrenceStatusesRaw.entrySet()) {
+                    occurrenceStatuses.put(entry.getKey(), entry.getValue().toString());
+                }
+                task.setOccurrenceStatuses(occurrenceStatuses);
+            } else {
+                task.setOccurrenceStatuses(new HashMap<>());
+            }
+
+        } catch (Exception e) {
+            Log.e("REPO_ERROR", "Greška kod Enuma: " + e.getMessage());
+        }
+
+        return task;
+    }
+
+    // >>> NOVI CALLBACK INTERFACE <
+    public interface TaskByIdCallback {
+        void onTaskLoaded(Task task);
+        void onError(String error);
     }
 
     // DELETE TASK
@@ -59,7 +175,7 @@ public class TaskRepository {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    // Helper: Firestore Document → Task objekat
+    // >>> AŽURIRANA METODA: Helper: Firestore Document → Task objekat <
     private Task documentToTask(QueryDocumentSnapshot doc) {
         Task task = new Task();
         task.setId(doc.getId());
@@ -67,20 +183,87 @@ public class TaskRepository {
         task.setCategoryId(doc.getString("categoryId"));
         task.setTitle(doc.getString("title"));
         task.setDescription(doc.getString("description"));
-        task.setFrequencyType(FrequencyType.valueOf(doc.getString("frequencyType")));
-        task.setRepeatInterval(doc.getLong("repeatInterval") != null ? doc.getLong("repeatInterval").intValue() : null);
 
-        String repeatUnitStr = doc.getString("repeatUnit");
-        task.setRepeatUnit(repeatUnitStr != null ? RepeatUnit.valueOf(repeatUnitStr) : null);
+        // BROJEVI
+        Long xpLong = doc.getLong("totalXp");
+        task.setTotalXp(xpLong != null ? xpLong.intValue() : 0);
 
+        Long execTime = doc.getLong("executionTime");
+        task.setExecutionTime(execTime != null ? execTime : 0L);
+
+        // DATUMI PONAVLJANJA
         task.setRepeatStartDate(doc.getLong("repeatStartDate"));
         task.setRepeatEndDate(doc.getLong("repeatEndDate"));
-        task.setExecutionTime(doc.getLong("executionTime"));
-        task.setDifficulty(Difficulty.valueOf(doc.getString("difficulty")));
-        task.setImportance(Importance.valueOf(doc.getString("importance")));
-        task.setTotalXp(doc.getLong("totalXp").intValue());
-        task.setCompleted(doc.getBoolean("completed"));
+
+        Long intervalLong = doc.getLong("repeatInterval");
+        task.setRepeatInterval(intervalLong != null ? intervalLong.intValue() : null);
+
+        // ENUMI
+        try {
+            String freq = doc.getString("frequencyType");
+            if (freq != null) {
+                task.setFrequencyType(FrequencyType.valueOf(freq));
+            } else {
+                Log.e("REPO_DEBUG", "Task " + task.getTitle() + " nema frequencyType u bazi!");
+                task.setFrequencyType(FrequencyType.ONE_TIME);
+            }
+
+            String diff = doc.getString("difficulty");
+            if (diff != null) task.setDifficulty(Difficulty.valueOf(diff));
+
+            String imp = doc.getString("importance");
+            if (imp != null) task.setImportance(Importance.valueOf(imp));
+
+            String unit = doc.getString("repeatUnit");
+            if (unit != null) task.setRepeatUnit(RepeatUnit.valueOf(unit));
+
+            List<Long> dates = (List<Long>) doc.get("recurringDates");
+            if (dates != null) {
+                task.setRecurringDates(dates);
+            }
+
+            String statusStr = doc.getString("status");
+            if (statusStr != null) {
+                task.setStatus(TaskStatus.valueOf(statusStr));
+            } else {
+                task.setStatus(TaskStatus.ACTIVE);
+            }
+
+            // >>> NOVO: Učitaj occurrenceStatuses mapu iz Firestore-a <
+            Map<String, Object> occurrenceStatusesRaw = (Map<String, Object>) doc.get("occurrenceStatuses");
+            if (occurrenceStatusesRaw != null) {
+                Map<String, String> occurrenceStatuses = new HashMap<>();
+                for (Map.Entry<String, Object> entry : occurrenceStatusesRaw.entrySet()) {
+                    occurrenceStatuses.put(entry.getKey(), entry.getValue().toString());
+                }
+                task.setOccurrenceStatuses(occurrenceStatuses);
+                Log.d("REPO_DEBUG", "Učitano " + occurrenceStatuses.size() + " specific statuses za task: " + task.getTitle());
+            } else {
+                task.setOccurrenceStatuses(new HashMap<>()); // Prazna mapa ako ne postoji
+                Log.d("REPO_DEBUG", "Nema specific statuses za task: " + task.getTitle());
+            }
+
+        } catch (Exception e) {
+            Log.e("REPO_ERROR", "Greška kod Enuma: " + e.getMessage());
+        }
+
         return task;
+    }
+
+    public void getTasksByCategory(String userId, String categoryId, TasksCallback callback) {
+        db.collection("tasks")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("categoryId", categoryId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Task> tasks = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        Task task = documentToTask(doc);
+                        tasks.add(task);
+                    }
+                    callback.onTasksLoaded(tasks);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     // CALLBACKS

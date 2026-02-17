@@ -1,17 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
-    id 'com.google.gms.google-services' // DODATO za Firebase
+    id 'com.google.gms.google-services'
 }
 
 android {
     namespace 'com.example.projekatmobilne'
     compileSdk 36
+
     defaultConfig {
         applicationId "com.example.projekatmobilne"
         minSdk 30
         targetSdk 36
         versionCode 1
         versionName "1.0"
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -37,21 +39,30 @@ dependencies {
     implementation libs.constraintlayout
     implementation libs.navigation.fragment
     implementation libs.navigation.ui
+
+    // Kalendar - modernija verzija za AndroidX
+    implementation 'com.github.prolificinteractive:material-calendarview:2.0.1'
+
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 
-    // ============ FIREBASE (DODATO) ============
+    // ============ FIREBASE ============
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'
 
-    // ============ LIFECYCLE (za ViewModels) ============
+    // ============ LIFECYCLE (ViewModels) ============
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.8.7'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.8.7'
 
     // ============ QR KOD (ZXing) ============
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+
+    // ============ CHARTS ============
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    // ============ Kalendar momenat ============
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.4'
 }
+apply plugin: 'com.google.gms.google-services'
