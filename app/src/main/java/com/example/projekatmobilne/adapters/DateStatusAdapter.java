@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.enums.FrequencyType;
@@ -24,12 +25,23 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
     private OnStatusChangeListener statusChangeListener;
     private Task task;
 
+    public interface OnDateRemoveListener {
+        void onDateRemove(long dateTimestamp);
+    }
+
+    private OnDateRemoveListener onDateRemoveListener;
+
     public interface OnStatusChangeListener {
         void onStatusChanged(long dateTimestamp, TaskStatus newStatus);
     }
 
     public DateStatusAdapter(OnStatusChangeListener listener) {
         this.statusChangeListener = listener;
+    }
+
+    public DateStatusAdapter(OnStatusChangeListener statusListener, OnDateRemoveListener dateRemoveListener) {
+        this.statusChangeListener = statusListener;
+        this.onDateRemoveListener = dateRemoveListener;
     }
 
     public void setData(Task task) {
@@ -75,6 +87,11 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
         // Status
         holder.tvStatusText.setText(translateStatus(item.status));
         updateStatusColors(holder, item.status);
+
+        holder.itemView.setOnLongClickListener(v -> {
+            showDeleteDateDialog(v, item.timestamp, item.status);
+            return true;
+        });
 
         // Klik na ceo item otvara meni za promenu statusa
         holder.itemView.setOnClickListener(v -> showStatusMenu(v, item.timestamp));
@@ -147,6 +164,7 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
         holder.tvStatusText.setBackgroundColor(bgColor);
     }
 
+
     private String translateStatus(TaskStatus status) {
         if (status == null) return "AKTIVAN";
         switch (status) {
@@ -176,6 +194,60 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
             cardDateStatus = itemView.findViewById(R.id.cardDateStatus);
         }
     }
+    /**
+     * AŽURIRANA METODA: Dijalog sa upozorenjom o brisanju svih budućih datuma
+     */
+    private void showDeleteDateDialog(View view, long timestamp, TaskStatus status) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        String dateStr = dateFormat.format(new Date(timestamp));
+
+        // >>> PROVERA: Da li je datum DONE? <
+        if (status == TaskStatus.DONE) {
+            // ❌ ZABRANJEN DELETE
+            new AlertDialog.Builder(view.getContext())
+                    .setTitle("❌ Brisanje zabranjeno")
+                    .setMessage("Ne možete obrisati završen termin (" + dateStr + ").\n\nOvo čuva vašu istoriju i zarađeni XP.")
+                    .setPositiveButton("U REDU", null)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+
+            Log.d("DATE_STATUS_ADAPTER", "DELETE ZABRANJEN - Datum " + dateStr + " je DONE");
+            return;
+        }
+
+        // >>> IZBROJAJ KOLIKO DATUMA ĆE SE OBRISATI <
+        int futureCount = 0;
+        for (DateStatusItem item : items) {
+            if (item.timestamp >= timestamp) {
+                futureCount++;
+            }
+        }
+
+        // >>> PRIKAŽI UPOZORENJE SA BROJEM <
+        String message;
+        if (futureCount == 1) {
+            message = "Da li želite da uklonite termin " + dateStr + " iz ponavljanja?";
+        } else {
+            message = "⚠️ UPOZORENJE: Biće uklonjeno " + futureCount + " termina!\n\n" +
+                    "Uklanjanjem termina " + dateStr + " brišu se i svi termini posle njega.\n\n" +
+                    "Da li želite da nastavite?";
+        }
+
+        // ✅ DOZVOLJENO - Prikaži potvrdu
+        new AlertDialog.Builder(view.getContext())
+                .setTitle(futureCount == 1 ? "⚠️ Ukloni termin" : "⚠️ Ukloni " + futureCount + " termina")
+                .setMessage(message)
+                .setPositiveButton("UKLONI", (dialog, which) -> {
+                    Log.d("DATE_STATUS_ADAPTER", "Uklanjam datum + buduće: " + dateStr);
+
+                    if (onDateRemoveListener != null) {
+                        onDateRemoveListener.onDateRemove(timestamp);
+                    }
+                })
+                .setNegativeButton("OTKAŽI", null)
+                .setIcon(android.R.drawable.ic_delete)
+                .show();
+    }
 
     // Pomoćna klasa za držanje podataka
     static class DateStatusItem {
@@ -187,4 +259,5 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
             this.status = status;
         }
     }
+
 }

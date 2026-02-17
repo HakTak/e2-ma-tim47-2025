@@ -99,6 +99,19 @@ public class TaskViewModel extends AndroidViewModel {
         });
     }
 
+    /**
+     * Smart Delete - briše task samo ako nema DONE datuma
+     * @return true ako je brisanje uspelo, false ako je zabranjeno
+     */
+    public void deleteTaskSmart(String taskId, TaskRepository.DeleteCallback callback) {
+        // Prvo učitaj task da proveriš da li ima DONE datume
+        // Pošto nemamo getTaskById(), koristićemo trenutnu listu
+        // (Alternativa: dodaj getTaskById() u Repository)
+
+        repository.deleteTask(taskId, callback);
+    }
+
+    // Stara metoda ostaje za kompatibilnost
     public void deleteTask(String taskId) {
         repository.deleteTask(taskId, new TaskRepository.DeleteCallback() {
             @Override
@@ -108,8 +121,40 @@ public class TaskViewModel extends AndroidViewModel {
 
             @Override
             public void onError(String error) {
-                // Handle error
+                Log.e("VIEWMODEL_DEBUG", "Greška pri brisanju: " + error);
             }
         });
+    }
+
+    /**
+     * NOVA METODA: Ukloni pojedinačan datum iz recurring taska
+     */
+    /**
+     * NOVA METODA: Ukloni datum + sve datume posle njega iz recurring taska
+     */
+    public void removeSingleOccurrence(Task task, long dateToRemove, RemoveOccurrenceCallback callback) {
+        int removedCount = task.removeSingleOccurrence(dateToRemove);
+
+        if (removedCount > 0) {
+            // Ako je task prazan (nema preostalih datuma), obriši ga kompletno
+            if (task.isEmpty()) {
+                Log.d("VIEWMODEL_DEBUG", "Task nema preostalih datuma - brišem kompletno");
+                deleteTask(task.getId());
+                callback.onSuccess(removedCount, true); // true = task obrisan
+            } else {
+                // Inače samo ažuriraj
+                Log.d("VIEWMODEL_DEBUG", "Ažuriram task posle uklanjanja " + removedCount + " datuma");
+                updateTask(task);
+                callback.onSuccess(removedCount, false); // false = task ostao
+            }
+        } else {
+            callback.onError("Datum nije pronađen u listi");
+        }
+    }
+
+    // >>> NOVI CALLBACK INTERFACE <
+    public interface RemoveOccurrenceCallback {
+        void onSuccess(int removedCount, boolean taskDeleted);
+        void onError(String error);
     }
 }

@@ -23,6 +23,7 @@ import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
+import com.example.projekatmobilne.repositories.TaskRepository;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 
@@ -82,30 +83,61 @@ public class TaskDetailFragment extends DialogFragment {
             updateCategoryName();
         });
 
-        // >>> NOVO: Setup RecyclerView za datume <
+        // >>> SETUP RECYCLERVIEW ZA DATUME <
         rvDateStatuses = rootView.findViewById(R.id.rvDateStatuses);
         rvDateStatuses.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        dateStatusAdapter = new DateStatusAdapter((dateTimestamp, newStatus) -> {
-            // Callback kada se promeni status nekog datuma
-            Log.d(TAG, "=== Status promenjen iz DateStatusAdapter ===");
-            Log.d(TAG, "Datum: " + new Date(dateTimestamp));
-            Log.d(TAG, "Novi status: " + newStatus);
-            Log.d(TAG, "Mapa PRE: " + currentTask.getOccurrenceStatuses());
+        dateStatusAdapter = new DateStatusAdapter(
+                // CALLBACK 1: Promena statusa (ostaje isti)
+                (dateTimestamp, newStatus) -> {
+                    Log.d(TAG, "=== Status promenjen iz DateStatusAdapter ===");
+                    Log.d(TAG, "Datum: " + new Date(dateTimestamp));
+                    Log.d(TAG, "Novi status: " + newStatus);
+                    Log.d(TAG, "Mapa PRE: " + currentTask.getOccurrenceStatuses());
 
-            // Postavi status za taj datum
-            currentTask.setStatusForDate(dateTimestamp, newStatus);
+                    currentTask.setStatusForDate(dateTimestamp, newStatus);
 
-            Log.d(TAG, "Mapa POSLE: " + currentTask.getOccurrenceStatuses());
+                    Log.d(TAG, "Mapa POSLE: " + currentTask.getOccurrenceStatuses());
 
-            // Ažuriraj u bazi
-            taskViewModel.updateTask(currentTask);
+                    taskViewModel.updateTask(currentTask);
+                    dateStatusAdapter.setData(currentTask);
+                    Toast.makeText(getContext(), "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
+                },
+                // CALLBACK 2: Uklanjanje datuma (AŽURIRAN)
+                (dateTimestamp) -> {
+                    Log.d(TAG, "=== Uklanjam datum + buduće ===");
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                    String dateStr = sdf.format(new Date(dateTimestamp));
 
-            // Osvežavanje adaptera da prikaže novu boju
-            dateStatusAdapter.setData(currentTask);
+                    taskViewModel.removeSingleOccurrence(currentTask, dateTimestamp, new TaskViewModel.RemoveOccurrenceCallback() {
+                        @Override
+                        public void onSuccess(int removedCount, boolean taskDeleted) {
+                            Log.d(TAG, "Uspešno uklonjeno " + removedCount + " datuma");
 
-            Toast.makeText(getContext(), "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
-        });
+                            if (taskDeleted) {
+                                Toast.makeText(getContext(), "Zadatak je obrisan (nema preostalih termina)", Toast.LENGTH_LONG).show();
+                                dismiss();
+                            } else {
+                                dateStatusAdapter.setData(currentTask);
+
+                                String message;
+                                if (removedCount == 1) {
+                                    message = "Termin " + dateStr + " uklonjen";
+                                } else {
+                                    message = "Uklonjeno " + removedCount + " termina";
+                                }
+                                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "Greška pri uklanjanju datuma: " + error);
+                            Toast.makeText(getContext(), "Greška: " + error, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+        );
 
         rvDateStatuses.setAdapter(dateStatusAdapter);
 
@@ -188,14 +220,45 @@ public class TaskDetailFragment extends DialogFragment {
     }
 
     private void confirmDeletion() {
+        if (currentTask == null) return;
+
+        // >>> PROVERA: Da li ima DONE datume? <
+        if (currentTask.hasAnyCompletedOccurrences()) {
+            int completedCount = currentTask.getCompletedCount();
+
+            // ❌ ZABRANJEN DELETE
+            new AlertDialog.Builder(getContext())
+                    .setTitle("❌ Brisanje zabranjeno")
+                    .setMessage("Ne možete obrisati zadatak koji ima završene termine (" + completedCount + " urađeno).\n\nOvo čuva vašu istoriju i zarađeni XP.")
+                    .setPositiveButton("U REDU", null)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+
+            Log.d(TAG, "DELETE ZABRANJEN - Task ima " + completedCount + " DONE datuma");
+            return;
+        }
+
+        // ✅ DOZVOLJENO - Prikaži potvrdu
+        String message;
+        if (currentTask.getFrequencyType() == FrequencyType.ONE_TIME) {
+            message = "Da li ste sigurni da želite da obrišete ovaj zadatak?";
+        } else {
+            int totalDates = currentTask.getRecurringDates() != null ? currentTask.getRecurringDates().size() : 0;
+            message = "Da li ste sigurni da želite da obrišete ovaj zadatak?\n\nBiće obrisano " + totalDates + " planiranih termina.";
+        }
+
         new AlertDialog.Builder(getContext())
-                .setTitle("Brisanje zadatka")
-                .setMessage("Da li ste sigurni da želite da obrišete ovaj zadatak?")
+                .setTitle("⚠️ Potvrda brisanja")
+                .setMessage(message)
                 .setPositiveButton("OBRIŠI", (dialog, which) -> {
+                    Log.d(TAG, "DELETE POTVRĐEN - Brišem task: " + currentTask.getTitle());
                     taskViewModel.deleteTask(currentTask.getId());
+                    Toast.makeText(getContext(), "Zadatak obrisan", Toast.LENGTH_SHORT).show();
                     dismiss();
                 })
-                .setNegativeButton("OTKAŽI", null).show();
+                .setNegativeButton("OTKAŽI", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 
     // PREVODI

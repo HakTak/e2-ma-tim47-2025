@@ -120,6 +120,89 @@ public class Task implements Serializable {
         this.occurrenceStatuses = occurrenceStatuses != null ? occurrenceStatuses : new HashMap<>();
     }
 
+    // >>> NOVE METODE ZA SMART DELETE <
+
+    /**
+     * Provera da li task ima bar jedan DONE datum
+     */
+    public boolean hasAnyCompletedOccurrences() {
+        if (occurrenceStatuses == null || occurrenceStatuses.isEmpty()) {
+            return status == TaskStatus.DONE;
+        }
+
+        for (String statusStr : occurrenceStatuses.values()) {
+            if ("DONE".equals(statusStr)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Broj završenih datuma
+     */
+    public int getCompletedCount() {
+        if (occurrenceStatuses == null) return 0;
+
+        int count = 0;
+        for (String statusStr : occurrenceStatuses.values()) {
+            if ("DONE".equals(statusStr)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Ukloni pojedinačan datum iz recurring niza
+     */
+    /**
+     * Ukloni datum iz recurring niza + SVE DATUME POSLE NJEGA
+     * @param dateToRemove timestamp datuma koji treba ukloniti
+     * @return broj uklonjenih datuma
+     */
+    public int removeSingleOccurrence(long dateToRemove) {
+        if (recurringDates == null || recurringDates.isEmpty()) return 0;
+
+        int removedCount = 0;
+        List<Long> toRemove = new ArrayList<>();
+
+        // Pronađi sve datume >= dateToRemove
+        for (Long date : recurringDates) {
+            if (date >= dateToRemove) {
+                toRemove.add(date);
+            }
+        }
+
+        // Ukloni iz liste datuma
+        for (Long date : toRemove) {
+            if (recurringDates.remove(date)) {
+                removedCount++;
+
+                // Ukloni i iz occurrenceStatuses mape
+                String dateKey = timestampToDateKey(date);
+                occurrenceStatuses.remove(dateKey);
+
+                Log.d("TASK_MODEL", "Uklonjen datum: " + dateKey);
+            }
+        }
+
+        Log.d("TASK_MODEL", "Ukupno uklonjeno: " + removedCount + " datuma");
+        Log.d("TASK_MODEL", "Preostalo datuma: " + recurringDates.size());
+
+        return removedCount;
+    }
+
+    /**
+     * Provera da li je task prazan (nema preostalih datuma)
+     */
+    public boolean isEmpty() {
+        if (frequencyType == FrequencyType.ONE_TIME) {
+            return false; // Jednokratni task uvek ima datum
+        }
+        return recurringDates == null || recurringDates.isEmpty();
+    }
+
     // ... ostali getteri i setteri ostaju isti ...
 
     public String getId() { return id; }

@@ -109,14 +109,40 @@ public class TasksActivity extends AppCompatActivity {
     }
 
     private void showDeleteTaskDialog(Task task) {
+        // >>> PROVERA: Da li ima DONE datume? <
+        if (task.hasAnyCompletedOccurrences()) {
+            int completedCount = task.getCompletedCount();
+
+            // ❌ ZABRANJEN DELETE
+            new AlertDialog.Builder(this)
+                    .setTitle("❌ Brisanje zabranjeno")
+                    .setMessage("Ne možete obrisati zadatak '" + task.getTitle() + "' koji ima završene termine (" + completedCount + " urađeno).\n\nOvo čuva vašu istoriju i zarađeni XP.")
+                    .setPositiveButton("U REDU", null)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+
+            Log.d("TASKS_ACTIVITY", "DELETE ZABRANJEN - Task ima " + completedCount + " DONE datuma");
+            return;
+        }
+
+        // ✅ DOZVOLJENO - Prikaži potvrdu
+        String message;
+        if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
+            message = "Da li ste sigurni da želite da obrišete '" + task.getTitle() + "'?";
+        } else {
+            int totalDates = task.getRecurringDates() != null ? task.getRecurringDates().size() : 0;
+            message = "Da li ste sigurni da želite da obrišete '" + task.getTitle() + "'?\n\nBiće obrisano " + totalDates + " planiranih termina.";
+        }
+
         new AlertDialog.Builder(this)
-                .setTitle("Obriši zadatak")
-                .setMessage("Da li ste sigurni da želite da obrišete '" + task.getTitle() + "'?")
-                .setPositiveButton("Obriši", (dialog, which) -> {
+                .setTitle("⚠️ Potvrda brisanja")
+                .setMessage(message)
+                .setPositiveButton("OBRIŠI", (dialog, which) -> {
+                    Log.d("TASKS_ACTIVITY", "DELETE POTVRĐEN - Brišem task: " + task.getTitle());
                     taskViewModel.deleteTask(task.getId());
                     Toast.makeText(this, "Zadatak obrisan", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("Otkaži", null)
+                .setNegativeButton("OTKAŽI", null)
                 .setIcon(R.drawable.avatar_1)
                 .show();
     }
