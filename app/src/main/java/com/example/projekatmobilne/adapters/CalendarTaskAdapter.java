@@ -158,12 +158,37 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
             if (statusChangeListener != null) {
                 statusChangeListener.onStatusChanged(task, newStatus, dateContext);
             }
+
+            // Ako je DONE → dodaj XP
+            if (newStatus == TaskStatus.DONE) {
+                awardXPForTask(view.getContext(), task);
+            }
+
             return true;
         });
 
         popup.show();
     }
 
+    // Nova helper metoda
+    private void awardXPForTask(android.content.Context context, Task task) {
+        com.example.projekatmobilne.utils.SharedPrefsManager prefsManager =
+                new com.example.projekatmobilne.utils.SharedPrefsManager(context);
+        String userId = prefsManager.getUserId();
+
+        if (userId != null) {
+            com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                    new androidx.lifecycle.ViewModelProvider(
+                            (androidx.fragment.app.FragmentActivity) context
+                    ).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+            userViewModel.addXP(userId, task.getTotalXp());
+
+            Toast.makeText(context,
+                    "+" + task.getTotalXp() + " XP zarađeno!",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
     private void updateStatusColor(TextView tv, TaskStatus status) {
         switch (status) {
             case ACTIVE:    tv.setTextColor(Color.parseColor("#27AE60")); break;

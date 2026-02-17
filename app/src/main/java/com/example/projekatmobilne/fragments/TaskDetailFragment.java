@@ -126,6 +126,12 @@ public class TaskDetailFragment extends DialogFragment {
 
                     taskViewModel.updateTask(currentTask);
                     dateStatusAdapter.setData(currentTask);
+
+                    // Ako je DONE → dodaj XP
+                    if (newStatus == TaskStatus.DONE) {
+                        awardXPForTask(currentTask);
+                    }
+
                     Toast.makeText(getContext(), "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
                 },
                 // Callback 2: Uklanjanje datuma (ostaje isto)
@@ -215,6 +221,7 @@ public class TaskDetailFragment extends DialogFragment {
     // ===================================================
     // DELETE LOGIKA
     // ===================================================
+
 
     private void confirmDeletion() {
         if (currentTask == null) return;
@@ -335,6 +342,22 @@ public class TaskDetailFragment extends DialogFragment {
             case "CRITICAL": return "Kritično";
             case "SPECIAL":  return "Specijalno";
             default:         return imp;
+        }
+    }
+
+    // Nova helper metoda (dodaj na kraj klase)
+    private void awardXPForTask(Task task) {
+        String userId = new com.example.projekatmobilne.utils.SharedPrefsManager(requireContext()).getUserId();
+
+        if (userId != null) {
+            com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                    new ViewModelProvider(requireActivity()).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+            userViewModel.addXP(userId, task.getTotalXp());
+
+            Toast.makeText(getContext(),
+                    "+" + task.getTotalXp() + " XP zarađeno!",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 }

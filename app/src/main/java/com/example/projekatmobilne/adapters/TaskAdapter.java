@@ -179,11 +179,38 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 return true;
             }
 
+            // Promeni status
             if (statusListener != null) statusListener.onStatusChanged(task, nextStatus, dateContext);
+
+            // Ako je DONE → dodaj XP
+            if (nextStatus == TaskStatus.DONE) {
+                awardXPForTask(view.getContext(), task);
+            }
+
             return true;
         });
 
         popup.show();
+    }
+
+    // Nova helper metoda
+    private void awardXPForTask(android.content.Context context, Task task) {
+        com.example.projekatmobilne.utils.SharedPrefsManager prefsManager =
+                new com.example.projekatmobilne.utils.SharedPrefsManager(context);
+        String userId = prefsManager.getUserId();
+
+        if (userId != null) {
+            com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                    new androidx.lifecycle.ViewModelProvider(
+                            (androidx.fragment.app.FragmentActivity) context
+                    ).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+            userViewModel.addXP(userId, task.getTotalXp());
+
+            Toast.makeText(context,
+                    "+" + task.getTotalXp() + " XP zarađeno!",
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void updateStatusColor(TextView tv, TaskStatus status) {
