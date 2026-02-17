@@ -350,14 +350,26 @@ public class TaskDetailFragment extends DialogFragment {
         String userId = new com.example.projekatmobilne.utils.SharedPrefsManager(requireContext()).getUserId();
 
         if (userId != null) {
-            com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
-                    new ViewModelProvider(requireActivity()).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+            com.example.projekatmobilne.services.XPTrackingService xpTracker =
+                    new com.example.projekatmobilne.services.XPTrackingService(requireContext());
 
-            userViewModel.addXP(userId, task.getTotalXp());
+            com.example.projekatmobilne.services.XPTrackingService.XPResult result =
+                    xpTracker.calculateAwardedXP(task.getDifficulty(), task.getImportance());
 
-            Toast.makeText(getContext(),
-                    "+" + task.getTotalXp() + " XP zarađeno!",
-                    Toast.LENGTH_SHORT).show();
+            if (result.hasEarnedXP()) {
+                com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                        new ViewModelProvider(requireActivity()).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+                userViewModel.addXP(userId, result.totalXP);
+
+                Toast.makeText(getContext(),
+                        "+" + result.getBreakdown(),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(),
+                        "Dnevni/nedeljni/mesečni limit dostignut - 0 XP",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

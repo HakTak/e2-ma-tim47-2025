@@ -177,16 +177,28 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
         String userId = prefsManager.getUserId();
 
         if (userId != null) {
-            com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
-                    new androidx.lifecycle.ViewModelProvider(
-                            (androidx.fragment.app.FragmentActivity) context
-                    ).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+            com.example.projekatmobilne.services.XPTrackingService xpTracker =
+                    new com.example.projekatmobilne.services.XPTrackingService(context);
 
-            userViewModel.addXP(userId, task.getTotalXp());
+            com.example.projekatmobilne.services.XPTrackingService.XPResult result =
+                    xpTracker.calculateAwardedXP(task.getDifficulty(), task.getImportance());
 
-            Toast.makeText(context,
-                    "+" + task.getTotalXp() + " XP zarađeno!",
-                    Toast.LENGTH_SHORT).show();
+            if (result.hasEarnedXP()) {
+                com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                        new androidx.lifecycle.ViewModelProvider(
+                                (androidx.fragment.app.FragmentActivity) context
+                        ).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+                userViewModel.addXP(userId, result.totalXP);
+
+                Toast.makeText(context,
+                        "+" + result.getBreakdown(),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(context,
+                        "Dnevni/nedeljni/mesečni limit dostignut - 0 XP",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     }
     private void updateStatusColor(TextView tv, TaskStatus status) {
