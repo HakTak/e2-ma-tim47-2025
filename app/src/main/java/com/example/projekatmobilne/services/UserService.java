@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,8 +23,8 @@ import java.util.Map;
  * Odgovornosti:
  * - Aktivnost tracking (dnevna aktivnost, streak-ovi)
  * - XP management (dodavanje XP, čišćenje istorije)
+ * - Level-up logika (automatski prelaz na sledeći nivo)
  * - Promena lozinke
- * - Validacija korisničkih podataka
  */
 public class UserService {
 
@@ -31,16 +32,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final FirebaseAuth firebaseAuth;
+    private final LevelService levelService;
 
     public UserService() {
         this.userRepository = new UserRepository();
         this.firebaseAuth = FirebaseAuth.getInstance();
+        this.levelService = new LevelService();
     }
 
     // ===== USER LOAD =====
-    /**
-     * Učitava korisnika iz baze
-     */
     public void getUser(String userId, UserRepository.UserCallback callback) {
         userRepository.getUser(userId, callback);
     }
@@ -49,17 +49,9 @@ public class UserService {
     /**
      * Provera dnevne aktivnosti korisnika.
      * Poziva se svaki put kad korisnik otvori aplikaciju.
-     *
-     * Business Rules:
-     * - Ako je prvi put (lastActivityDate == 0) → aktivni dani = 1, streak = 1
-     * - Ako je danas već evidentiran → ne radi ništa
-     * - Ako je jučerašnji dan → nastavlja streak
-     * - Ako je pauza > 1 dan → resetuje streak na 1
      */
     public void checkDailyActivity(String userId) {
-        if (userId == null || userId.isEmpty()) {
-            return;
-        }
+        if (userId == null || userId.isEmpty()) return;
 
         userRepository.getUser(userId, new UserRepository.UserCallback() {
             @Override
@@ -67,7 +59,6 @@ public class UserService {
                 long currentTime = System.currentTimeMillis();
                 long lastActivityDate = user.getLastActivityDate();
 
-                // Ako je prvi put
                 if (lastActivityDate == 0) {
                     user.setLastActivityDate(currentTime);
                     user.setActiveDays(1);
@@ -77,23 +68,15 @@ public class UserService {
                     return;
                 }
 
-                // Proveri da li je danas već evidentiran
-                if (isSameDay(currentTime, lastActivityDate)) {
-                    return; // Već je danas bio aktivan
-                }
+                if (isSameDay(currentTime, lastActivityDate)) return;
 
-                // Proveri da li je jučerašnji dan
                 if (isYesterday(lastActivityDate)) {
-                    // Nastavi streak
                     user.setActiveDays(user.getActiveDays() + 1);
                     user.setCurrentStreak(user.getCurrentStreak() + 1);
-
-                    // Ažuriraj najduži niz ako je potrebno
                     if (user.getCurrentStreak() > user.getLongestStreak()) {
                         user.setLongestStreak(user.getCurrentStreak());
                     }
                 } else {
-                    // Pauza je veća od 1 dana - resetuj streak
                     user.setActiveDays(user.getActiveDays() + 1);
                     user.setCurrentStreak(1);
                 }
@@ -111,56 +94,113 @@ public class UserService {
 
     // ===== XP MANAGEMENT =====
     /**
-     * Dodaje XP korisniku i ažurira istoriju.
+     * Dodaje XP korisniku, ažurira istoriju i proverava level-up.
      *
-     * Business Rules:
-     * - Dodaje XP za današnji dan u xpHistory
-     * - Automatski briše unose starije od 7 dana
-     * - Ažurira ukupan XP korisnika
+     * @param userId    ID korisnika
+     * @param xpAmount  Količina XP koja se dodaje
+     * @param callback  Callback sa rezultatom (uključuje level-up info)
      */
-    public void addXP(String userId, int xpAmount, FirestoreManager.FirestoreCallback callback) {
+    public void addXP(String userId, int xpAmount, XPCallback callback) {
         userRepository.getUser(userId, new UserRepository.UserCallback() {
             @Override
             public void onUserLoaded(User user) {
                 String today = getTodayDateString();
                 Map<String, Integer> xpHistory = user.getXpHistory();
 
-                // Dodaj XP za današnji dan
-                int currentXP = xpHistory.getOrDefault(today, 0);
-                xpHistory.put(today, currentXP + xpAmount);
+                // Dodaj XP za današnji dan u istoriju
+                int currentDayXP = xpHistory.getOrDefault(today, 0);
+                xpHistory.put(today, currentDayXP + xpAmount);
 
                 // Obriši unose starije od 7 dana
                 cleanOldXPHistory(xpHistory);
 
                 // Ažuriraj ukupan XP
-                user.setXp(user.getXp() + xpAmount);
+                int newXP = user.getXp() + xpAmount;
+                user.setXp(newXP);
+                user.setXpHistory(xpHistory);
 
-                // Sačuvaj u bazu
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("xpHistory", xpHistory);
-                updates.put("xp", user.getXp());
-
-                userRepository.updateUser(userId, updates, callback);
+                // Proveri level-up
+                checkAndApplyLevelUp(user, callback);
             }
 
             @Override
             public void onError(String error) {
-                if (callback != null) {
-                    callback.onError(error);
-                }
+                if (callback != null) callback.onError(error);
             }
         });
     }
 
-    // ===== PASSWORD CHANGE =====
+    // ===== LEVEL UP LOGIKA =====
     /**
-     * Menja lozinku korisnika.
-     *
-     * Business Rules:
-     * - Validira staru lozinku (reauthentication)
-     * - Validira novu lozinku (minimum 6 karaktera)
-     * - Ažurira lozinku u Firebase Auth
+     * Proverava da li korisnik treba da pređe na sledeći nivo.
+     * Ako da, ažurira level, PP, titulu i čuva u bazu.
      */
+    private void checkAndApplyLevelUp(User user, XPCallback callback) {
+        boolean didLevelUp = false;
+        int newLevel = user.getLevel();
+        int totalPPGained = 0;
+
+        // Proveravamo u petlji jer korisnik može preskočiti više nivoa odjednom
+        while (levelService.shouldLevelUp(user.getXp(), newLevel)) {
+            newLevel++;
+            int ppReward = levelService.calculatePPReward(newLevel);
+            totalPPGained += ppReward;
+            didLevelUp = true;
+        }
+
+        if (didLevelUp) {
+            // Ažuriraj User objekat
+            user.setLevel(newLevel);
+            user.setPp(user.getPp() + totalPPGained);
+            user.setTitle(levelService.getTitleForLevel(newLevel));
+
+            // Sačuvaj SVE promene u Firestore
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("xp", user.getXp());
+            updates.put("xpHistory", user.getXpHistory());
+            updates.put("level", user.getLevel());
+            updates.put("pp", user.getPp());
+            updates.put("title", user.getTitle());
+
+            int finalNewLevel = newLevel;
+            int finalPPGained = totalPPGained;
+
+            userRepository.updateUser(user.getId(), updates, new FirestoreManager.FirestoreCallback() {
+                @Override
+                public void onSuccess() {
+                    if (callback != null) {
+                        callback.onSuccess(true, finalNewLevel, finalPPGained);
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    if (callback != null) callback.onError(error);
+                }
+            });
+        } else {
+            // Nema level-up, sačuvaj samo XP
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("xp", user.getXp());
+            updates.put("xpHistory", user.getXpHistory());
+
+            userRepository.updateUser(user.getId(), updates, new FirestoreManager.FirestoreCallback() {
+                @Override
+                public void onSuccess() {
+                    if (callback != null) {
+                        callback.onSuccess(false, user.getLevel(), 0);
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    if (callback != null) callback.onError(error);
+                }
+            });
+        }
+    }
+
+    // ===== PASSWORD CHANGE =====
     public void changePassword(String oldPassword, String newPassword, PasswordCallback callback) {
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
 
@@ -169,14 +209,13 @@ public class UserService {
             return;
         }
 
-        // Validacija
         if (newPassword.length() < 6) {
             callback.onError("Nova lozinka mora imati minimum 6 karaktera!");
             return;
         }
 
-        // Reauthenticate
-        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), oldPassword);
+        AuthCredential credential = EmailAuthProvider.getCredential(
+                currentUser.getEmail(), oldPassword);
 
         currentUser.reauthenticate(credential)
                 .addOnCompleteListener(task -> {
@@ -195,38 +234,31 @@ public class UserService {
                 });
     }
 
-    // ===== HELPER METHODS (Private) =====
+    // ===== HELPER METODE =====
 
     private boolean isSameDay(long timestamp1, long timestamp2) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String date1 = sdf.format(new Date(timestamp1));
-        String date2 = sdf.format(new Date(timestamp2));
-        return date1.equals(date2);
+        return sdf.format(new Date(timestamp1)).equals(sdf.format(new Date(timestamp2)));
     }
 
     private boolean isYesterday(long timestamp) {
         long yesterday = System.currentTimeMillis() - ONE_DAY_MILLIS;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String yesterdayStr = sdf.format(new Date(yesterday));
-        String timestampStr = sdf.format(new Date(timestamp));
-        return yesterdayStr.equals(timestampStr);
+        return sdf.format(new Date(yesterday)).equals(sdf.format(new Date(timestamp)));
     }
 
     private String getTodayDateString() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        return sdf.format(new Date());
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
     }
 
     private void cleanOldXPHistory(Map<String, Integer> xpHistory) {
         String sevenDaysAgo = getDateStringDaysAgo(7);
-
-        List<String> keysToRemove = new java.util.ArrayList<>();
+        List<String> keysToRemove = new ArrayList<>();
         for (String dateKey : xpHistory.keySet()) {
             if (dateKey.compareTo(sevenDaysAgo) < 0) {
                 keysToRemove.add(dateKey);
             }
         }
-
         for (String key : keysToRemove) {
             xpHistory.remove(key);
         }
@@ -235,11 +267,19 @@ public class UserService {
     private String getDateStringDaysAgo(int daysAgo) {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_YEAR, -daysAgo);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        return sdf.format(calendar.getTime());
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                .format(calendar.getTime());
     }
 
     // ===== CALLBACKS =====
+
+    /**
+     * Callback za dodavanje XP sa informacijom o level-up-u
+     */
+    public interface XPCallback {
+        void onSuccess(boolean leveledUp, int newLevel, int ppGained);
+        void onError(String error);
+    }
 
     public interface PasswordCallback {
         void onSuccess();

@@ -9,24 +9,25 @@
             android:title="@string/drawer_profile" />
 
         <item
+            android:id="@+id/nav_level_progress"
+            android:icon="@android:drawable/star_big_on"
+            android:title="@string/drawer_level_progress" />
+
+        <item
             android:id="@+id/nav_categories"
-            android:icon="@android:drawable/ic_menu_sort_by_size"
+            android:icon="@android:drawable/ic_menu_agenda"
             android:title="@string/drawer_categories" />
 
         <item
             android:id="@+id/nav_statistics"
-            android:icon="@android:drawable/ic_menu_info_details"
+            android:icon="@android:drawable/ic_menu_sort_by_size"
             android:title="@string/drawer_statistics" />
 
     </group>
 
-    <item android:title="Opcije">
-        <menu>
-            <item
-                android:id="@+id/nav_logout"
-                android:icon="@android:drawable/ic_lock_power_off"
-                android:title="@string/drawer_logout" />
-        </menu>
-    </item>
+    <item
+        android:id="@+id/nav_logout"
+        android:icon="@android:drawable/ic_menu_close_clear_cancel"
+        android:title="@string/drawer_logout" />
 
 </menu>
