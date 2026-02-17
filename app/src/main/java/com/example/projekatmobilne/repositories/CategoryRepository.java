@@ -1,5 +1,7 @@
 package com.example.projekatmobilne.repositories;
 
+import android.util.Log;
+
 import com.example.projekatmobilne.models.Category;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -9,15 +11,21 @@ import java.util.List;
 
 public class CategoryRepository {
 
+    private static final String TAG = "CATEGORY_REPO";
+    private static final String COLLECTION = "categories";
+
     private final FirebaseFirestore db;
 
     public CategoryRepository() {
         this.db = FirebaseFirestore.getInstance();
     }
 
-    // GET ALL CATEGORIES (za specifičnog usera)
+    // ===================================================
+    // CRUD
+    // ===================================================
+
     public void getAllCategories(String userId, CategoriesCallback callback) {
-        db.collection("categories")
+        db.collection(COLLECTION)
                 .whereEqualTo("userId", userId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
@@ -29,26 +37,55 @@ public class CategoryRepository {
                     }
                     callback.onCategoriesLoaded(categories);
                 })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "getAllCategories() greška: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
-    // INSERT CATEGORY
     public void insertCategory(Category category, InsertCallback callback) {
-        db.collection("categories")
+        db.collection(COLLECTION)
                 .add(category.toMap())
-                .addOnSuccessListener(docRef -> callback.onSuccess(docRef.getId()))
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnSuccessListener(docRef -> {
+                    Log.d(TAG, "Kategorija dodata: " + docRef.getId());
+                    callback.onSuccess(docRef.getId());
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "insertCategory() greška: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
-    // DELETE CATEGORY
+    public void updateCategoryColor(String categoryId, String newColorHex, UpdateCallback callback) {
+        db.collection(COLLECTION).document(categoryId)
+                .update("colorHex", newColorHex)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Boja kategorije ažurirana: " + categoryId);
+                    callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "updateCategoryColor() greška: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
     public void deleteCategory(String categoryId, DeleteCallback callback) {
-        db.collection("categories").document(categoryId)
+        db.collection(COLLECTION).document(categoryId)
                 .delete()
-                .addOnSuccessListener(aVoid -> callback.onSuccess())
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Kategorija obrisana: " + categoryId);
+                    callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "deleteCategory() greška: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
+    // ===================================================
     // CALLBACKS
+    // ===================================================
+
     public interface CategoriesCallback {
         void onCategoriesLoaded(List<Category> categories);
         void onError(String error);
@@ -56,6 +93,11 @@ public class CategoryRepository {
 
     public interface InsertCallback {
         void onSuccess(String categoryId);
+        void onError(String error);
+    }
+
+    public interface UpdateCallback {
+        void onSuccess();
         void onError(String error);
     }
 
