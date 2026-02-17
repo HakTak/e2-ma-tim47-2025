@@ -13,20 +13,20 @@ public class User {
     private int level;
     private String title;
     private int pp;
+    private int basePP; // NOVO - permanentni PP bez privremenih bonusa
     private int xp;
     private int coins;
 
     // Statistika
-    private int activeDays; // Broj dana aktivnosti
-    private int tasksCreated; // Ukupno kreiranih taskova
-    private int tasksCompleted; // Ukupno završenih taskova
-    private int tasksCancelled; // Ukupno otkazanih
-    private int longestStreak; // Najduži niz
-    private int currentStreak; // Trenutni niz
-    private long lastActivityDate; // Zadnji dan aktivnosti (timestamp u milisekundama)
+    private int activeDays;
+    private int tasksCreated;
+    private int tasksCompleted;
+    private int tasksCancelled;
+    private int longestStreak;
+    private int currentStreak;
+    private long lastActivityDate;
 
-    // ===== NOVO: XP History (poslednjih 7 dana) =====
-    private Map<String, Integer> xpHistory; // key: "yyyy-MM-dd", value: XP za taj dan
+    private Map<String, Integer> xpHistory;
 
     private List<String> badges;
     private List<String> equipment;
@@ -36,7 +36,7 @@ public class User {
     public User() {
         this.badges = new ArrayList<>();
         this.equipment = new ArrayList<>();
-        this.xpHistory = new HashMap<>(); // NOVO
+        this.xpHistory = new HashMap<>();
         this.activeDays = 0;
         this.tasksCreated = 0;
         this.tasksCompleted = 0;
@@ -44,6 +44,7 @@ public class User {
         this.longestStreak = 0;
         this.currentStreak = 0;
         this.lastActivityDate = 0;
+        this.basePP = 0; // NOVO
     }
 
     // Konstruktor za kreiranje novog usera
@@ -55,14 +56,14 @@ public class User {
         this.level = 0;
         this.title = "Početnik";
         this.pp = 0;
+        this.basePP = 0; // NOVO
         this.xp = 0;
         this.coins = 0;
         this.badges = new ArrayList<>();
         this.equipment = new ArrayList<>();
-        this.xpHistory = new HashMap<>(); // NOVO
+        this.xpHistory = new HashMap<>();
         this.createdAt = System.currentTimeMillis();
 
-        // Statistika
         this.activeDays = 0;
         this.tasksCreated = 0;
         this.tasksCompleted = 0;
@@ -82,6 +83,7 @@ public class User {
         map.put("level", level);
         map.put("title", title);
         map.put("pp", pp);
+        map.put("basePP", basePP); // NOVO
         map.put("xp", xp);
         map.put("coins", coins);
         map.put("badges", badges);
@@ -94,8 +96,7 @@ public class User {
         map.put("longestStreak", longestStreak);
         map.put("currentStreak", currentStreak);
         map.put("lastActivityDate", lastActivityDate);
-        map.put("xpHistory", xpHistory); // NOVO
-
+        map.put("xpHistory", xpHistory);
         return map;
     }
 
@@ -121,6 +122,9 @@ public class User {
     public int getPp() { return pp; }
     public void setPp(int pp) { this.pp = pp; }
 
+    public int getBasePP() { return basePP; } // NOVO
+    public void setBasePP(int basePP) { this.basePP = basePP; } // NOVO
+
     public int getXp() { return xp; }
     public void setXp(int xp) { this.xp = xp; }
 
@@ -136,7 +140,6 @@ public class User {
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
-    // Statistika getters & setters
     public int getActiveDays() { return activeDays; }
     public void setActiveDays(int activeDays) { this.activeDays = activeDays; }
 
@@ -158,7 +161,6 @@ public class User {
     public long getLastActivityDate() { return lastActivityDate; }
     public void setLastActivityDate(long lastActivityDate) { this.lastActivityDate = lastActivityDate; }
 
-    // ===== NOVO: XP History =====
     public Map<String, Integer> getXpHistory() {
         return xpHistory != null ? xpHistory : new HashMap<>();
     }

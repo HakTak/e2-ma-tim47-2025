@@ -37,24 +37,33 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        initServices();
+        initToolbar();
+        initDrawer();
+        initNavigation();
+        initBackPressHandler();
+    }
+
+    private void initServices() {
         prefsManager = new SharedPrefsManager(this);
         userService = new UserService();
 
-        // ===== REFAKTORISANO: Koristi UserService za activity tracking =====
         String userId = prefsManager.getUserId();
         if (userId != null && !userId.isEmpty()) {
             userService.checkDailyActivity(userId);
         }
+    }
 
-        // Toolbar setup
+    private void initToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+    }
 
-        // Drawer setup
+    private void initDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
 
-        // Hamburger icon
+        Toolbar toolbar = findViewById(R.id.toolbar);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open,
@@ -62,43 +71,46 @@ public class HomeActivity extends AppCompatActivity {
         );
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+    }
 
-        // Navigation Component
+    private void initNavigation() {
         navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupWithNavController(navigationView, navController);
 
-        // Handle drawer item clicks
         navigationView.setNavigationItemSelectedListener(item -> {
-            int id = item.getItemId();
-
-            if (id == R.id.nav_logout) {
-                showLogoutDialog();
-            }
-            else if (id == R.id.nav_tasks) {
-                Intent intent = new Intent(HomeActivity.this, TasksActivity.class);
-                startActivity(intent);
-                drawerLayout.closeDrawer(GravityCompat.START);
-            }
-            else {
-                NavigationUI.onNavDestinationSelected(item, navController);
-                drawerLayout.closeDrawer(GravityCompat.START);
-            }
+            handleDrawerItemSelected(item.getItemId());
             return true;
         });
+    }
 
-        // ===== NOVO: Moderan način za back press handling =====
+    private void initBackPressHandler() {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
-                    // Pozovi default behavior (izađi iz app-a)
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
                 }
             }
         });
+    }
+
+    private void handleDrawerItemSelected(int id) {
+        if (id == R.id.nav_logout) {
+            showLogoutDialog();
+
+        } else if (id == R.id.nav_tasks) {
+            // Tasks ide u poseban Activity
+            startActivity(new Intent(this, TasksActivity.class));
+
+        } else {
+            // SVE ostalo (uključujući shop i equipment) ide kroz NavController
+            navController.navigate(id);
+        }
+
+        drawerLayout.closeDrawer(GravityCompat.START);
     }
 
     @Override
@@ -120,15 +132,17 @@ public class HomeActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.drawer_logout)
                 .setMessage(R.string.logout_confirm)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
-                    FirebaseAuth.getInstance().signOut();
-                    prefsManager.clearSession();
-                    Intent intent = new Intent(HomeActivity.this, AuthActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                })
+                .setPositiveButton(R.string.yes, (dialog, which) -> performLogout())
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void performLogout() {
+        FirebaseAuth.getInstance().signOut();
+        prefsManager.clearSession();
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

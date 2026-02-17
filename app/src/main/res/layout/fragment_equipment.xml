@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:background="@color/white">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Moja Oprema"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"/>
+
+        <TextView
+            android:id="@+id/tvEquipmentPP"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:textColor="#1565C0"
+            android:textStyle="bold"/>
+
+    </LinearLayout>
+
+    <!-- Dugme Kreni u borbu (vidljivo samo ako fromBossFight = true) -->
+    <Button
+        android:id="@+id/btnGoToBossFight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:text="⚔️ Kreni u borbu!"
+        android:textSize="16sp"
+        android:visibility="gone"/>
+
+    <!-- Tabs: Napici / Odeća / Oružje -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayoutEquipment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"/>
+
+    <!-- Lista opreme -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvEquipment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp"
+        android:clipToPadding="false"/>
+
+    <!-- Prazna lista -->
+    <TextView
+        android:id="@+id/tvEmptyEquipment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="Nemaš opreme u ovoj kategoriji.\nKupi u prodavnici ili osvoji u borbi!"
+        android:textSize="15sp"
+        android:textColor="#999999"
+        android:visibility="gone"/>
+
+</LinearLayout>
