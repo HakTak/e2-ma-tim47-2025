@@ -7,42 +7,55 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
+import com.example.projekatmobilne.services.TaskService;
 import com.google.android.material.card.MaterialCardView;
+
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapter.SlotViewHolder> {
 
     private List<Task> tasks = new ArrayList<>();
     private List<Category> categories = new ArrayList<>();
-    private OnTaskClickListener clickListener;
 
-    // >>> NOVO: Dodaj callback za promenu statusa <
-    private OnTaskStatusChangeListener statusChangeListener;
+    private final OnTaskClickListener clickListener;
+    private final OnTaskStatusChangeListener statusChangeListener;
+    private final DateProvider dateProvider;
+
+    private final TaskService taskService = new TaskService();
+
+    // ===================================================
+    // INTERFEJSI
+    // ===================================================
 
     public interface DateProvider {
         long getSelectedDate();
     }
 
-    private DateProvider dateProvider;
-
     public interface OnTaskClickListener {
         void onTaskClick(Task task);
     }
 
-    // >>> NOVI INTERFACE: Za promenu statusa <
     public interface OnTaskStatusChangeListener {
         void onStatusChanged(Task task, TaskStatus newStatus, long dateContext);
     }
 
-    // >>> IZMENJENO: Dodaj statusChangeListener parametar <
+    // ===================================================
+    // KONSTRUKTOR
+    // ===================================================
+
     public CalendarTaskAdapter(OnTaskClickListener clickListener,
                                DateProvider dateProvider,
                                OnTaskStatusChangeListener statusChangeListener) {
@@ -51,11 +64,19 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
         this.statusChangeListener = statusChangeListener;
     }
 
+    // ===================================================
+    // DATA
+    // ===================================================
+
     public void setData(List<Task> tasks, List<Category> categories) {
         this.tasks = tasks;
         this.categories = categories;
         notifyDataSetChanged();
     }
+
+    // ===================================================
+    // RECYCLER
+    // ===================================================
 
     @NonNull
     @Override
@@ -69,22 +90,22 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
         Task task = tasks.get(position);
         holder.tvTitle.setText(task.getTitle());
 
-        // Uzmi status za selektovani datum iz kalendara
         long selectedDate = dateProvider.getSelectedDate();
-        TaskStatus currentStatus = task.getStatusForDate(selectedDate);
+
+        // Status kroz servis, ne direktno na modelu
+        TaskStatus currentStatus = taskService.getStatusForDate(task, selectedDate);
 
         holder.tvStatus.setText(currentStatus.name());
         updateStatusColor(holder.tvStatus, currentStatus);
-        Log.d("CALENDAR_ADAPTER", "Status za " + task.getTitle() + " na datum " + new Date(selectedDate) + " = " + currentStatus);
+        Log.d("CALENDAR_ADAPTER", "Status za " + task.getTitle() + " na datum "
+                + new Date(selectedDate) + " = " + currentStatus);
 
-        // >>> NOVO: Dodaj onClick na status TextView <
         holder.tvStatus.setOnClickListener(v -> showStatusMenu(v, task, selectedDate));
 
-        // Formatiranje vremena (HH:mm)
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         holder.tvTime.setText(sdf.format(new Date(task.getExecutionTime())));
 
-        // Boja na osnovu kategorije
+        // Boja kategorije
         String colorHex = "#B2BEC3";
         for (Category c : categories) {
             if (c.getId().equals(task.getCategoryId())) {
@@ -97,7 +118,15 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
         holder.itemView.setOnClickListener(v -> clickListener.onTaskClick(task));
     }
 
-    // >>> NOVA METODA: Prikaži popup meni za promenu statusa <
+    @Override
+    public int getItemCount() {
+        return tasks.size();
+    }
+
+    // ===================================================
+    // PRIVATE HELPER METODE
+    // ===================================================
+
     private void showStatusMenu(View view, Task task, long dateContext) {
         PopupMenu popup = new PopupMenu(view.getContext(), view);
         popup.getMenu().add("Postavi: AKTIVAN");
@@ -109,20 +138,18 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
         }
 
         popup.setOnMenuItemClickListener(item -> {
-            TaskStatus newStatus;
             String choice = item.getTitle().toString();
+            TaskStatus newStatus;
 
-            if (choice.contains("AKTIVAN")) newStatus = TaskStatus.ACTIVE;
-            else if (choice.contains("URAĐENO")) newStatus = TaskStatus.DONE;
+            if (choice.contains("AKTIVAN"))       newStatus = TaskStatus.ACTIVE;
+            else if (choice.contains("URAĐENO"))  newStatus = TaskStatus.DONE;
             else if (choice.contains("OTKAZANO")) newStatus = TaskStatus.CANCELLED;
-            else newStatus = TaskStatus.PAUSED;
+            else                                  newStatus = TaskStatus.PAUSED;
 
-            Log.d("CALENDAR_ADAPTER", "=== Promena statusa iz kalendara ===");
-            Log.d("CALENDAR_ADAPTER", "Task: " + task.getTitle());
-            Log.d("CALENDAR_ADAPTER", "Datum: " + new Date(dateContext));
-            Log.d("CALENDAR_ADAPTER", "Novi status: " + newStatus);
+            Log.d("CALENDAR_ADAPTER", "Task: " + task.getTitle()
+                    + " | Datum: " + new Date(dateContext)
+                    + " | Novi status: " + newStatus);
 
-            // Pozovi callback
             if (statusChangeListener != null) {
                 statusChangeListener.onStatusChanged(task, newStatus, dateContext);
             }
@@ -131,19 +158,19 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
         popup.show();
     }
 
-    // >>> NOVA METODA: Boje statusa <
     private void updateStatusColor(TextView tv, TaskStatus status) {
         switch (status) {
-            case ACTIVE: tv.setTextColor(Color.parseColor("#27AE60")); break;
-            case DONE: tv.setTextColor(Color.GRAY); break;
-            case CANCELLED: tv.setTextColor(Color.RED); break;
-            case PAUSED: tv.setTextColor(Color.parseColor("#F39C12")); break;
-            case UPCOMING: tv.setTextColor(Color.parseColor("#9B59B6")); break;
+            case ACTIVE:    tv.setTextColor(Color.parseColor("#27AE60")); break;
+            case DONE:      tv.setTextColor(Color.GRAY);                  break;
+            case CANCELLED: tv.setTextColor(Color.RED);                   break;
+            case PAUSED:    tv.setTextColor(Color.parseColor("#F39C12")); break;
+            case UPCOMING:  tv.setTextColor(Color.parseColor("#9B59B6")); break;
         }
     }
 
-    @Override
-    public int getItemCount() { return tasks.size(); }
+    // ===================================================
+    // VIEW HOLDER
+    // ===================================================
 
     static class SlotViewHolder extends RecyclerView.ViewHolder {
         TextView tvTime, tvTitle, tvStatus;
@@ -151,10 +178,10 @@ public class CalendarTaskAdapter extends RecyclerView.Adapter<CalendarTaskAdapte
 
         public SlotViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTime = itemView.findViewById(R.id.tvSlotTime);
-            tvTitle = itemView.findViewById(R.id.tvSlotTitle);
+            tvTime   = itemView.findViewById(R.id.tvSlotTime);
+            tvTitle  = itemView.findViewById(R.id.tvSlotTitle);
             tvStatus = itemView.findViewById(R.id.tvSlotStatus);
-            card = itemView.findViewById(R.id.cardTaskSlot);
+            card     = itemView.findViewById(R.id.cardTaskSlot);
         }
     }
 }

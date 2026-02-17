@@ -20,6 +20,7 @@ import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
+import com.example.projekatmobilne.services.TaskService;
 import com.example.projekatmobilne.utils.EventDecorator;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
@@ -40,6 +41,8 @@ public class CalendarFragment extends Fragment {
     private TaskViewModel taskViewModel;
     private CategoryViewModel categoryViewModel;
 
+    private TaskService taskService;
+
     private List<Task> allTasks = new ArrayList<>();
     private List<Category> allCategories = new ArrayList<>();
 
@@ -54,6 +57,7 @@ public class CalendarFragment extends Fragment {
 
         taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
+        taskService = new TaskService();
 
         // >>> IZMENJENO: Dodaj statusChangeListener callback <
         calendarAdapter = new CalendarTaskAdapter(
@@ -68,8 +72,7 @@ public class CalendarFragment extends Fragment {
                     Log.d("CALENDAR_FRAGMENT", "Mapa PRE: " + task.getOccurrenceStatuses());
 
                     // >>> POSTAVI STATUS ZA DATUM <
-                    task.setStatusForDate(dateContext, newStatus);
-
+                    taskService.setStatusForDate(task, dateContext, newStatus);
                     Log.d("CALENDAR_FRAGMENT", "Mapa POSLE: " + task.getOccurrenceStatuses());
 
                     // >>> AŽURIRAJ U BAZI <
