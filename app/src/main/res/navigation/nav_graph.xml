@@ -34,4 +34,15 @@
         android:name="com.example.projekatmobilne.fragments.CalendarFragment"
         android:label="Kalendar" />
 
+    <!-- NOVO -->
+    <fragment
+        android:id="@+id/nav_shop"
+        android:name="com.example.projekatmobilne.fragments.ShopFragment"
+        android:label="Prodavnica" />
+
+    <fragment
+        android:id="@+id/nav_equipment"
+        android:name="com.example.projekatmobilne.fragments.EquipmentFragment"
+        android:label="Oprema" />
+
 </navigation>

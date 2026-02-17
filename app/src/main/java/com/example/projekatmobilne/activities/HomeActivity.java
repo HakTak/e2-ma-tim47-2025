@@ -14,14 +14,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.projekatmobilne.R;
-import com.example.projekatmobilne.fragments.EquipmentFragment;
-import com.example.projekatmobilne.fragments.ShopFragment;
 import com.example.projekatmobilne.services.UserService;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
 import com.google.android.material.navigation.NavigationView;
@@ -46,8 +43,6 @@ public class HomeActivity extends AppCompatActivity {
         initNavigation();
         initBackPressHandler();
     }
-
-    // ===== INIT METODE =====
 
     private void initServices() {
         prefsManager = new SharedPrefsManager(this);
@@ -102,41 +97,21 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    // ===== DRAWER NAVIGACIJA =====
-
     private void handleDrawerItemSelected(int id) {
-        // Uvek očisti manuelno dodane fragmente pre navigacije
-        getSupportFragmentManager().popBackStack(null,
-                androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
-
         if (id == R.id.nav_logout) {
             showLogoutDialog();
 
         } else if (id == R.id.nav_tasks) {
+            // Tasks ide u poseban Activity
             startActivity(new Intent(this, TasksActivity.class));
 
-        } else if (id == R.id.nav_shop) {
-            navigateToFragment(new ShopFragment());
-
-        } else if (id == R.id.nav_equipment) {
-            navigateToFragment(EquipmentFragment.newInstance(false));
-
         } else {
-            NavigationUI.onNavDestinationSelected(
-                    navigationView.getMenu().findItem(id), navController);
+            // SVE ostalo (uključujući shop i equipment) ide kroz NavController
+            navController.navigate(id);
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
     }
-
-    private void navigateToFragment(Fragment fragment) {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.nav_host_fragment, fragment)
-                .addToBackStack(null)
-                .commit();
-    }
-
-    // ===== MENU =====
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -152,8 +127,6 @@ public class HomeActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-
-    // ===== LOGOUT =====
 
     private void showLogoutDialog() {
         new AlertDialog.Builder(this)

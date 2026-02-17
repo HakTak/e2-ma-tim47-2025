@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -97,8 +98,7 @@ public class EquipmentFragment extends Fragment {
         if (fromBossFight) {
             btnGoToBossFight.setVisibility(View.VISIBLE);
             btnGoToBossFight.setOnClickListener(v -> {
-                // Kolega ovde navigira na BossFightFragment
-                requireActivity().onBackPressed();
+                Navigation.findNavController(requireView()).popBackStack();
             });
         }
 
