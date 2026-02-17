@@ -234,9 +234,14 @@ public class AddTaskActivity extends AppCompatActivity {
     }
 
     private void disableNonEditableFields() {
+        // Disable učestalost (ne može se menjati ONE_TIME ↔ RECURRING)
         spinnerFrequency.setEnabled(false);
+
+        // Disable recurring opcije
         layoutRecurringOptions.setVisibility(View.GONE);
         btnPickDate.setVisibility(View.GONE);
+
+        // Kategorija je sada editabilna — ne disable-ujemo je
     }
 
     private int getDifficultyIndex(Difficulty diff) {
@@ -365,6 +370,10 @@ public class AddTaskActivity extends AppCompatActivity {
         // Ažuriraj metapodatke — važe za ceo task
         editingTask.setTitle(etTitle.getText().toString().trim());
         editingTask.setDescription(etDescription.getText().toString().trim());
+
+        // Ažuriraj kategoriju na izabranu iz spinnera
+        Category selectedCat = allCategories.get(spinnerCategory.getSelectedItemPosition());
+        editingTask.setCategoryId(selectedCat.getId());
 
         // Ažuriraj težinu i bitnost
         editingTask.setDifficulty(Difficulty.valueOf(spinnerDifficulty.getSelectedItem().toString()));
