@@ -55,6 +55,15 @@ public class TaskViewModel extends AndroidViewModel {
             @Override
             public void onTasksLoaded(List<Task> tasks) {
                 Log.d(TAG, "Učitano taskova: " + tasks.size());
+
+                // Automatsko označavanje overdue taskova
+                List<Task> modifiedTasks = taskService.validateAndUpdateOverdueTasks(tasks);
+
+                if (!modifiedTasks.isEmpty()) {
+                    Log.d(TAG, "Batch update za " + modifiedTasks.size() + " FAILED taskova");
+                    batchUpdateTasks(modifiedTasks);
+                }
+
                 tasksLiveData.postValue(tasks);
             }
 
@@ -72,6 +81,13 @@ public class TaskViewModel extends AndroidViewModel {
         repository.getTasksByCategory(userId, categoryId, new TaskRepository.TasksCallback() {
             @Override
             public void onTasksLoaded(List<Task> tasks) {
+                // Automatsko označavanje overdue taskova
+                List<Task> modifiedTasks = taskService.validateAndUpdateOverdueTasks(tasks);
+
+                if (!modifiedTasks.isEmpty()) {
+                    batchUpdateTasks(modifiedTasks);
+                }
+
                 tasksLiveData.postValue(tasks);
             }
 
@@ -129,14 +145,29 @@ public class TaskViewModel extends AndroidViewModel {
         });
     }
 
+    /**
+     * Batch update za više taskova odjednom (za FAILED označavanje)
+     */
+    private void batchUpdateTasks(List<Task> tasks) {
+        for (Task task : tasks) {
+            repository.updateTask(task, new TaskRepository.UpdateCallback() {
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "Task " + task.getId() + " ažuriran (FAILED)");
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "Greška pri batch update: " + error);
+                }
+            });
+        }
+    }
+
     // ===================================================
     // DELETE
     // ===================================================
 
-    /**
-     * Briše task uz validaciju — ne može se obrisati task koji ima DONE datume.
-     * @param callback vraća grešku ako brisanje nije dozvoljeno
-     */
     public void deleteTaskSmart(Task task, DeleteSmartCallback callback) {
         String validationError = validationService.canDelete(task);
         if (validationError != null) {
@@ -160,10 +191,6 @@ public class TaskViewModel extends AndroidViewModel {
         });
     }
 
-    /**
-     * Ukloni datum + sve datume posle njega iz recurring taska.
-     * Ako task ostane prazan, briše se kompletno.
-     */
     public void removeSingleOccurrence(Task task, long dateToRemove, RemoveOccurrenceCallback callback) {
         int removedCount = taskService.removeSingleOccurrence(task, dateToRemove);
 

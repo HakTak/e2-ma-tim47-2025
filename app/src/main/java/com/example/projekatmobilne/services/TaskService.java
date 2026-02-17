@@ -15,15 +15,12 @@ import java.util.Locale;
 public class TaskService {
 
     private static final String TAG = "TASK_SERVICE";
+    private static final long THREE_DAYS_IN_MILLIS = 3 * 24 * 60 * 60 * 1000L;
 
     // ===================================================
     // DATUM HELPER
     // ===================================================
 
-    /**
-     * Konvertuj timestamp u String ključ formata YYYY-MM-DD
-     * PUBLIC STATIC - koristi se i u ostalim servisima
-     */
     public static String timestampToDateKey(long timestamp) {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(timestamp);
@@ -33,9 +30,6 @@ public class TaskService {
                 cal.get(Calendar.DAY_OF_MONTH));
     }
 
-    /**
-     * Početak dana (00:00:00) za dati timestamp
-     */
     public static long getStartOfDay(long timestamp) {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(timestamp);
@@ -46,9 +40,6 @@ public class TaskService {
         return cal.getTimeInMillis();
     }
 
-    /**
-     * Početak današnjeg dana (00:00:00)
-     */
     public static long getStartOfToday() {
         return getStartOfDay(System.currentTimeMillis());
     }
@@ -57,10 +48,6 @@ public class TaskService {
     // STATUS LOGIKA
     // ===================================================
 
-    /**
-     * Dobij status za specifičan datum.
-     * Ako nema specifičnog statusa, vraća globalni status taska.
-     */
     public TaskStatus getStatusForDate(Task task, long timestamp) {
         String dateKey = timestampToDateKey(timestamp);
 
@@ -71,9 +58,6 @@ public class TaskService {
         return task.getStatus() != null ? task.getStatus() : TaskStatus.ACTIVE;
     }
 
-    /**
-     * Postavi status za specifičan datum
-     */
     public void setStatusForDate(Task task, long timestamp, TaskStatus newStatus) {
         String dateKey = timestampToDateKey(timestamp);
         task.getOccurrenceStatuses().put(dateKey, newStatus.name());
@@ -84,9 +68,6 @@ public class TaskService {
         Log.d(TAG, "  - Mapa posle izmene: " + task.getOccurrenceStatuses());
     }
 
-    /**
-     * Odredi inicijalni status novog taska
-     */
     public TaskStatus calculateInitialStatus(FrequencyType freqType, long executionTime) {
         if (freqType == FrequencyType.RECURRING) {
             return TaskStatus.ACTIVE;
@@ -99,13 +80,103 @@ public class TaskService {
     }
 
     // ===================================================
-    // RECURRING DATES LOGIKA
+    // VALIDACIJA PROMENE STATUSA (Zadaci 1, 2, 3)
     // ===================================================
 
     /**
-     * Generiši listu datuma za recurring task
+     * Validira da li je dozvoljena promena statusa.
+     * @return poruku greške ako nije dozvoljeno, null ako jeste
      */
+    public String canChangeStatus(Task task, long dateContext, TaskStatus currentStatus, TaskStatus newStatus) {
+        long now = System.currentTimeMillis();
 
+        // CANCELLED taskovi ne mogu menjati status
+        if (currentStatus == TaskStatus.CANCELLED) {
+            return "Ne možete menjati status otkazanog zadatka.";
+        }
+
+        // FAILED taskovi ne mogu menjati status
+        if (currentStatus == TaskStatus.FAILED) {
+            return "Ne možete menjati status zadatka koji je označen kao NEUSPEŠAN.";
+        }
+
+        // Zadatak 1: Samo ACTIVE može prelaziti u DONE/CANCELLED/PAUSED
+        if (currentStatus != TaskStatus.ACTIVE &&
+                (newStatus == TaskStatus.DONE || newStatus == TaskStatus.CANCELLED || newStatus == TaskStatus.PAUSED)) {
+            return "Samo aktivni zadaci mogu biti označeni kao urađeni, otkazani ili pauzirani.";
+        }
+
+        // Zadatak 3: DONE samo ako je executionTime prošao
+        if (newStatus == TaskStatus.DONE) {
+            if (dateContext > now) {
+                return "Ne možete označiti zadatak kao urađen pre nego što nastupi vreme izvršavanja.";
+            }
+        }
+
+        // Zadatak 2: Ne možemo menjati status zadataka starijih od 3 dana
+        long threeDaysAgo = now - THREE_DAYS_IN_MILLIS;
+        if (dateContext < threeDaysAgo && currentStatus == TaskStatus.ACTIVE) {
+            return "Ne možete menjati status zadatka starijeg od 3 dana. Automatski je označen kao NEUSPEŠAN.";
+        }
+
+        return null; // Validacija prošla
+    }
+
+    // ===================================================
+    // AUTOMATSKO OZNAČAVANJE OVERDUE TASKOVA (Zadatak 2)
+    // ===================================================
+
+    /**
+     * Prolazi kroz sve taskove i označava prekoračene (>3 dana) ACTIVE taskove kao FAILED.
+     * @return lista taskova koji su izmenjeni (za batch update u bazi)
+     */
+    public List<Task> validateAndUpdateOverdueTasks(List<Task> tasks) {
+        List<Task> modifiedTasks = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        long threeDaysAgo = now - THREE_DAYS_IN_MILLIS;
+
+        for (Task task : tasks) {
+            boolean wasModified = false;
+
+            if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
+                // Jednokratni task
+                TaskStatus currentStatus = task.getStatus();
+                long executionTime = task.getExecutionTime();
+
+                if (currentStatus == TaskStatus.ACTIVE && executionTime < threeDaysAgo) {
+                    task.setStatus(TaskStatus.FAILED);
+                    wasModified = true;
+                    Log.d(TAG, "Task '" + task.getTitle() + "' označen kao FAILED (one-time)");
+                }
+
+            } else {
+                // Recurring task — proveravamo svaki datum posebno
+                if (task.getRecurringDates() != null) {
+                    for (Long timestamp : task.getRecurringDates()) {
+                        String dateKey = timestampToDateKey(timestamp);
+                        TaskStatus dateStatus = getStatusForDate(task, timestamp);
+
+                        if (dateStatus == TaskStatus.ACTIVE && timestamp < threeDaysAgo) {
+                            setStatusForDate(task, timestamp, TaskStatus.FAILED);
+                            wasModified = true;
+                            Log.d(TAG, "Task '" + task.getTitle() + "' datum " + dateKey + " označen kao FAILED");
+                        }
+                    }
+                }
+            }
+
+            if (wasModified) {
+                modifiedTasks.add(task);
+            }
+        }
+
+        Log.d(TAG, "Označeno " + modifiedTasks.size() + " taskova kao FAILED");
+        return modifiedTasks;
+    }
+
+    // ===================================================
+    // RECURRING DATES LOGIKA
+    // ===================================================
 
     public List<Long> generateRecurringDates(long start, long end, RepeatUnit unit, int interval) {
         List<Long> dates = new ArrayList<>();
@@ -126,10 +197,6 @@ public class TaskService {
         return dates;
     }
 
-    /**
-     * Ukloni datum + sve datume posle njega iz recurring niza.
-     * @return broj uklonjenih datuma
-     */
     public int removeSingleOccurrence(Task task, long dateToRemove) {
         if (task.getRecurringDates() == null || task.getRecurringDates().isEmpty()) return 0;
 
@@ -157,9 +224,6 @@ public class TaskService {
         return removedCount;
     }
 
-    /**
-     * Ažuriraj vreme izvršavanja za sve buduće ACTIVE datume recurring taska
-     */
     public void updateFutureOccurrenceTimes(Task task, int newHour, int newMinute) {
         if (task.getRecurringDates() == null) return;
 
@@ -187,9 +251,6 @@ public class TaskService {
         Log.d(TAG, "Ažurirano vreme za buduće datume: " + newHour + ":" + newMinute);
     }
 
-    /**
-     * Spoji izabrani datum i izabrano vreme u jedan timestamp
-     */
     public long mergeDateTime(long datePart, long timePart) {
         Calendar dateCal = Calendar.getInstance();
         dateCal.setTimeInMillis(datePart);
@@ -209,11 +270,6 @@ public class TaskService {
     // QUERY HELPER METODE
     // ===================================================
 
-    /**
-     * Odredi dateContext za prikaz taska (koristi se u adapterima)
-     * Za recurring: sledeći datum od danas
-     * Za one-time: executionTime
-     */
     public long getDateContext(Task task) {
         if (task.getFrequencyType() != FrequencyType.RECURRING) {
             return task.getExecutionTime();
@@ -224,9 +280,6 @@ public class TaskService {
         return nextDate != null ? nextDate : task.getExecutionTime();
     }
 
-    /**
-     * Provera da li task ima preostalih datuma
-     */
     public boolean isEmpty(Task task) {
         if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
             return false;
@@ -234,9 +287,6 @@ public class TaskService {
         return task.getRecurringDates() == null || task.getRecurringDates().isEmpty();
     }
 
-    /**
-     * Provera da li je task u prošlosti
-     */
     public boolean isTaskInPast(Task task, long startOfToday) {
         if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
             return task.getExecutionTime() < startOfToday;

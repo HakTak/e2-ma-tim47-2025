@@ -102,9 +102,22 @@ public class TaskDetailFragment extends DialogFragment {
         rvDateStatuses.setLayoutManager(new LinearLayoutManager(getContext()));
 
         dateStatusAdapter = new DateStatusAdapter(
-                // Callback 1: Promena statusa
+                // Callback 1: Promena statusa (DOPUNJEN SA VALIDACIJOM)
                 (dateTimestamp, newStatus) -> {
-                    Log.d(TAG, "Status promenjen | Datum: " + new Date(dateTimestamp) + " | Status: " + newStatus);
+                    Log.d(TAG, "Pokušaj promene statusa | Datum: " + new Date(dateTimestamp) + " | Novi status: " + newStatus);
+
+                    // Dobij trenutni status za taj datum
+                    TaskStatus currentStatus = taskService.getStatusForDate(currentTask, dateTimestamp);
+
+                    // VALIDACIJA PRE PROMENE STATUSA
+                    String validationError = taskService.canChangeStatus(currentTask, dateTimestamp, currentStatus, newStatus);
+                    if (validationError != null) {
+                        Toast.makeText(getContext(), validationError, Toast.LENGTH_LONG).show();
+                        Log.d(TAG, "Validacija NIJE prošla: " + validationError);
+                        return; // Blokira promenu
+                    }
+
+                    Log.d(TAG, "Validacija prošla, menjam status");
                     Log.d(TAG, "Mapa PRE: " + currentTask.getOccurrenceStatuses());
 
                     taskService.setStatusForDate(currentTask, dateTimestamp, newStatus);
@@ -113,9 +126,15 @@ public class TaskDetailFragment extends DialogFragment {
 
                     taskViewModel.updateTask(currentTask);
                     dateStatusAdapter.setData(currentTask);
+
+                    // Ako je DONE → dodaj XP
+                    if (newStatus == TaskStatus.DONE) {
+                        awardXPForTask(currentTask);
+                    }
+
                     Toast.makeText(getContext(), "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
                 },
-                // Callback 2: Uklanjanje datuma
+                // Callback 2: Uklanjanje datuma (ostaje isto)
                 (dateTimestamp) -> {
                     Log.d(TAG, "Uklanjam datum + buduće");
                     SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
@@ -202,6 +221,7 @@ public class TaskDetailFragment extends DialogFragment {
     // ===================================================
     // DELETE LOGIKA
     // ===================================================
+
 
     private void confirmDeletion() {
         if (currentTask == null) return;
@@ -322,6 +342,34 @@ public class TaskDetailFragment extends DialogFragment {
             case "CRITICAL": return "Kritično";
             case "SPECIAL":  return "Specijalno";
             default:         return imp;
+        }
+    }
+
+    // Nova helper metoda (dodaj na kraj klase)
+    private void awardXPForTask(Task task) {
+        String userId = new com.example.projekatmobilne.utils.SharedPrefsManager(requireContext()).getUserId();
+
+        if (userId != null) {
+            com.example.projekatmobilne.services.XPTrackingService xpTracker =
+                    new com.example.projekatmobilne.services.XPTrackingService(requireContext());
+
+            com.example.projekatmobilne.services.XPTrackingService.XPResult result =
+                    xpTracker.calculateAwardedXP(task.getDifficulty(), task.getImportance());
+
+            if (result.hasEarnedXP()) {
+                com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                        new ViewModelProvider(requireActivity()).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+                userViewModel.addXP(userId, result.totalXP);
+
+                Toast.makeText(getContext(),
+                        "+" + result.getBreakdown(),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(),
+                        "Dnevni/nedeljni/mesečni limit dostignut - 0 XP",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

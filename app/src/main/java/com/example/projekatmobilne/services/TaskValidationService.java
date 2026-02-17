@@ -4,21 +4,23 @@ import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Task;
 
-import java.util.Calendar;
-
 public class TaskValidationService {
-
-    private static final String TAG = "TASK_VALIDATION";
 
     // ===================================================
     // VALIDACIJA BRISANJA
     // ===================================================
 
-    /**
-     * Da li task može biti obrisan?
-     * @return poruku greške ako ne može, null ako može
-     */
     public String canDelete(Task task) {
+        // CANCELLED taskovi ne mogu biti obrisani
+        if (task.getStatus() == TaskStatus.CANCELLED) {
+            return "Ne možete obrisati otkazani zadatak.\n\nOvo čuva vašu istoriju.";
+        }
+
+        // FAILED taskovi ne mogu biti obrisani
+        if (task.getStatus() == TaskStatus.FAILED) {
+            return "Ne možete obrisati zadatak koji je označen kao NEUSPEŠAN.\n\nOvo čuva vašu istoriju.";
+        }
+
         if (hasAnyCompletedOccurrences(task)) {
             int count = getCompletedCount(task);
             return "Ne možete obrisati zadatak koji ima završene termine ("
@@ -27,11 +29,21 @@ public class TaskValidationService {
         return null;
     }
 
-    /**
-     * Da li pojedinačni datum recurring taska može biti obrisan?
-     * @return poruku greške ako ne može, null ako može
-     */
     public String canDeleteOccurrence(long timestamp, TaskStatus status) {
+        // CANCELLED datumi ne mogu biti obrisani
+        if (status == TaskStatus.CANCELLED) {
+            String dateKey = TaskService.timestampToDateKey(timestamp);
+            return "Ne možete obrisati otkazani termin ("
+                    + dateKey + ").\n\nOvo čuva vašu istoriju.";
+        }
+
+        // FAILED datumi ne mogu biti obrisani
+        if (status == TaskStatus.FAILED) {
+            String dateKey = TaskService.timestampToDateKey(timestamp);
+            return "Ne možete obrisati neuspešan termin ("
+                    + dateKey + ").\n\nOvo čuva vašu istoriju.";
+        }
+
         if (status == TaskStatus.DONE) {
             String dateKey = TaskService.timestampToDateKey(timestamp);
             return "Ne možete obrisati završen termin ("
@@ -44,11 +56,17 @@ public class TaskValidationService {
     // VALIDACIJA EDITOVANJA
     // ===================================================
 
-    /**
-     * Da li task može biti editovan?
-     * @return poruku greške ako ne može, null ako može
-     */
     public String canEdit(Task task) {
+        // CANCELLED taskovi ne mogu biti editovani
+        if (task.getStatus() == TaskStatus.CANCELLED) {
+            return "Ne možete menjati otkazani zadatak.\n\nOvo čuva vašu istoriju.";
+        }
+
+        // FAILED taskovi ne mogu biti editovani
+        if (task.getStatus() == TaskStatus.FAILED) {
+            return "Ne možete menjati zadatak koji je označen kao NEUSPEŠAN.\n\nOvo čuva vašu istoriju.";
+        }
+
         if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
 
             if (task.getStatus() == TaskStatus.DONE) {
@@ -72,12 +90,9 @@ public class TaskValidationService {
     }
 
     // ===================================================
-    // QUERY HELPER METODE
+    // HELPER METODE
     // ===================================================
 
-    /**
-     * Da li task ima bar jedan DONE datum?
-     */
     public boolean hasAnyCompletedOccurrences(Task task) {
         if (task.getOccurrenceStatuses() == null || task.getOccurrenceStatuses().isEmpty()) {
             return task.getStatus() == TaskStatus.DONE;
@@ -91,9 +106,6 @@ public class TaskValidationService {
         return false;
     }
 
-    /**
-     * Broj završenih datuma
-     */
     public int getCompletedCount(Task task) {
         if (task.getOccurrenceStatuses() == null) return 0;
 
@@ -106,9 +118,6 @@ public class TaskValidationService {
         return count;
     }
 
-    /**
-     * Da li recurring task ima bar jedan budući ACTIVE datum?
-     */
     public boolean hasFutureActiveDates(Task task) {
         if (task.getRecurringDates() == null) return false;
 
@@ -119,9 +128,14 @@ public class TaskValidationService {
             boolean isFuture = startOfDay >= startOfToday;
 
             String dateKey = TaskService.timestampToDateKey(timestamp);
-            boolean isDone = "DONE".equals(task.getOccurrenceStatuses().get(dateKey));
+            String statusStr = task.getOccurrenceStatuses().get(dateKey);
 
-            if (isFuture && !isDone) {
+            // Proveravamo da status nije DONE, FAILED, ili CANCELLED
+            boolean isReadOnly = "DONE".equals(statusStr) ||
+                    "FAILED".equals(statusStr) ||
+                    "CANCELLED".equals(statusStr);
+
+            if (isFuture && !isReadOnly) {
                 return true;
             }
         }

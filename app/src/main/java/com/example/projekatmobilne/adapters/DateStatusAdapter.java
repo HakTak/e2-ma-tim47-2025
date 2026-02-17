@@ -218,6 +218,11 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
                 icon = "⏸️"; textColor = Color.parseColor("#F39C12"); bgColor = Color.parseColor("#FFF3E0"); break;
             case UPCOMING:
                 icon = "🔜"; textColor = Color.parseColor("#9B59B6"); bgColor = Color.parseColor("#F3E5F5"); break;
+            case FAILED:
+                icon = "💀";
+                textColor = Color.parseColor("#E74C3C");
+                bgColor = Color.parseColor("#FFEBEE");
+                break;
             default: // ACTIVE
                 icon = "⭕"; textColor = Color.parseColor("#3498DB"); bgColor = Color.parseColor("#E3F2FD"); break;
         }
@@ -234,6 +239,7 @@ public class DateStatusAdapter extends RecyclerView.Adapter<DateStatusAdapter.Da
             case PAUSED:    return "PAUZIRANO";
             case CANCELLED: return "OTKAZANO";
             case UPCOMING:  return "NADOLAZEĆI";
+            case FAILED:    return  "NEURĐENO";
             default:        return "AKTIVAN";
         }
     }
