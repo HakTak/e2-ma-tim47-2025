@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- NASLOV -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Napredovanje"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="24dp" />
+
+        <!-- ===== CARD: NIVO I TITULA ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/background_white"
+            android:padding="24dp"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:elevation="2dp">
+
+            <!-- Veliki prikaz nivoa -->
+            <TextView
+                android:id="@+id/tvCurrentLevel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nivo 0"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_primary"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Titula -->
+            <TextView
+                android:id="@+id/tvCurrentTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Početnik"
+                android:textSize="20sp"
+                android:textStyle="bold|italic"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="16dp" />
+
+            <!-- PP -->
+            <TextView
+                android:id="@+id/tvCurrentPP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PP (Snaga): 0"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <!-- ===== CARD: XP PROGRESS ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/background_white"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Napredak ka sledećem nivou"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="12dp" />
+
+            <!-- XP tekst -->
+            <TextView
+                android:id="@+id/tvXPProgress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="XP: 0 / 200"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Progress bar -->
+            <ProgressBar
+                android:id="@+id/progressBarXP"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:max="200"
+                android:progress="0"
+                android:progressTint="@color/purple_primary"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Info za sledeći nivo -->
+            <TextView
+                android:id="@+id/tvNextLevelInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Još 200 XP do Nivoa 1"
+                android:textSize="14sp"
+                android:textColor="@color/text_hint"
+                android:textStyle="italic" />
+        </LinearLayout>
+
+        <!-- ===== TEST DUGME (OBRISATI POSLE TESTIRANJA) ===== -->
+        <Button
+            android:id="@+id/btnAddTestXP"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="[TEST] Dodaj 50 XP"
+            android:backgroundTint="@color/warning_orange"
+            android:layout_marginTop="16dp" />
+
+    </LinearLayout>
+</ScrollView>

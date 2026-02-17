@@ -131,4 +131,8 @@
     <string name="nova_lozinka">Nova lozinka</string>
     <string name="unesi_novu_lozinku">Unesi novu lozinku</string>
     <string name="potvrdi_novu_lozinku">Potvrdi novu lozinku</string>
+
+
+    <string name="drawer_level_progress">Napredovanje</string>
+    <string name="level_progress">Napredovanje kroz nivoe</string>
 </resources>

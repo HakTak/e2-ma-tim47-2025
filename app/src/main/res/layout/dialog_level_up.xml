@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="@color/background_white">
+
+    <!-- IKONICA -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⬆️"
+        android:textSize="48sp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- NASLOV -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Novi Nivo!"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/purple_primary"
+        android:layout_marginBottom="16dp" />
+
+    <!-- NIVO - dinamički iz koda -->
+    <TextView
+        android:id="@+id/tvDialogLevel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <!-- TITULA - dinamički iz koda -->
+    <TextView
+        android:id="@+id/tvDialogTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="16sp"
+        android:textColor="@color/purple_primary"
+        android:textStyle="italic"
+        android:layout_marginBottom="16dp" />
+
+    <!-- DIVIDER -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/background_light"
+        android:layout_marginBottom="16dp" />
+
+    <!-- PP NAGRADA - dinamički iz koda -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Zaradio si: "
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/tvDialogPP"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/success_green" />
+    </LinearLayout>
+
+    <!-- SLEDEĆI NIVO - dinamički iz koda -->
+    <TextView
+        android:id="@+id/tvDialogNextLevel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="14sp"
+        android:textColor="@color/text_hint"
+        android:layout_marginBottom="24dp" />
+
+    <!-- DUGME -->
+    <Button
+        android:id="@+id/btnDialogClose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nastavi"
+        android:backgroundTint="@color/purple_primary"
+        android:textSize="16sp" />
+
+</LinearLayout>

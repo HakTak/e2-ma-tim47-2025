@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.models.User;
+import com.example.projekatmobilne.services.LevelService;
 import com.example.projekatmobilne.services.UserService;
 import com.example.projekatmobilne.utils.QRCodeGenerator;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
@@ -35,6 +36,7 @@ public class ProfileFragment extends Fragment {
     private UserViewModel userViewModel;
     private SharedPrefsManager prefsManager;
     private UserService userService;
+    private LevelService levelService;
 
     private String viewedUserId;
     private boolean isOwnProfile;
@@ -89,6 +91,7 @@ public class ProfileFragment extends Fragment {
 
         userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
         userService = new UserService();
+        levelService = new LevelService();
 
         // Load user data
         userViewModel.loadUser(viewedUserId);
@@ -103,7 +106,7 @@ public class ProfileFragment extends Fragment {
         tvUsername.setText(user.getUsername());
         tvLevel.setText(getString(R.string.level) + ": " + user.getLevel());
         tvTitle.setText(user.getTitle());
-        tvXP.setText(getString(R.string.xp_label) + ": " + user.getXp() + " / 200");
+        tvXP.setText(getString(R.string.xp_label) + ": " + user.getXp() + " / " + levelService.calculateXPThreshold(user.getLevel() + 1));
 
         // Avatar
         int avatarResId = getResources().getIdentifier(user.getAvatar(), "drawable", requireContext().getPackageName());
