@@ -72,4 +72,42 @@ public class FirestoreManager {
                     }
                 });
     }
+    public void addEquipment(String userId, String equipmentId,
+                             Map<String, Object> data, FirestoreCallback callback) {
+        db.collection("users").document(userId)
+                .collection("equipment").document(equipmentId)
+                .set(data)
+                .addOnSuccessListener(a -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void getEquipmentList(String userId, EquipmentListCallback callback) {
+        db.collection("users").document(userId)
+                .collection("equipment")
+                .get()
+                .addOnSuccessListener(querySnapshot -> callback.onSuccess(querySnapshot.getDocuments()))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void updateEquipment(String userId, String equipmentId,
+                                Map<String, Object> updates, FirestoreCallback callback) {
+        db.collection("users").document(userId)
+                .collection("equipment").document(equipmentId)
+                .update(updates)
+                .addOnSuccessListener(a -> { if (callback != null) callback.onSuccess(); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
+    }
+
+    public void deleteEquipment(String userId, String equipmentId, FirestoreCallback callback) {
+        db.collection("users").document(userId)
+                .collection("equipment").document(equipmentId)
+                .delete()
+                .addOnSuccessListener(a -> { if (callback != null) callback.onSuccess(); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
+    }
+
+    public interface EquipmentListCallback {
+        void onSuccess(java.util.List<com.google.firebase.firestore.DocumentSnapshot> documents);
+        void onError(String error);
+    }
 }

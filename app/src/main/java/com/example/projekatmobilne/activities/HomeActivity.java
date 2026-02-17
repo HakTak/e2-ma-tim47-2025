@@ -14,11 +14,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.fragments.EquipmentFragment;
+import com.example.projekatmobilne.fragments.ShopFragment;
 import com.example.projekatmobilne.services.UserService;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
 import com.google.android.material.navigation.NavigationView;
@@ -37,24 +40,35 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        initServices();
+        initToolbar();
+        initDrawer();
+        initNavigation();
+        initBackPressHandler();
+    }
+
+    // ===== INIT METODE =====
+
+    private void initServices() {
         prefsManager = new SharedPrefsManager(this);
         userService = new UserService();
 
-        // ===== REFAKTORISANO: Koristi UserService za activity tracking =====
         String userId = prefsManager.getUserId();
         if (userId != null && !userId.isEmpty()) {
             userService.checkDailyActivity(userId);
         }
+    }
 
-        // Toolbar setup
+    private void initToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+    }
 
-        // Drawer setup
+    private void initDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
 
-        // Hamburger icon
+        Toolbar toolbar = findViewById(R.id.toolbar);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open,
@@ -62,44 +76,67 @@ public class HomeActivity extends AppCompatActivity {
         );
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+    }
 
-        // Navigation Component
+    private void initNavigation() {
         navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupWithNavController(navigationView, navController);
 
-        // Handle drawer item clicks
         navigationView.setNavigationItemSelectedListener(item -> {
-            int id = item.getItemId();
-
-            if (id == R.id.nav_logout) {
-                showLogoutDialog();
-            }
-            else if (id == R.id.nav_tasks) {
-                Intent intent = new Intent(HomeActivity.this, TasksActivity.class);
-                startActivity(intent);
-                drawerLayout.closeDrawer(GravityCompat.START);
-            }
-            else {
-                NavigationUI.onNavDestinationSelected(item, navController);
-                drawerLayout.closeDrawer(GravityCompat.START);
-            }
+            handleDrawerItemSelected(item.getItemId());
             return true;
         });
+    }
 
-        // ===== NOVO: Moderan način za back press handling =====
+    private void initBackPressHandler() {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
-                    // Pozovi default behavior (izađi iz app-a)
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
                 }
             }
         });
     }
+
+    // ===== DRAWER NAVIGACIJA =====
+
+    private void handleDrawerItemSelected(int id) {
+        // Uvek očisti manuelno dodane fragmente pre navigacije
+        getSupportFragmentManager().popBackStack(null,
+                androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        if (id == R.id.nav_logout) {
+            showLogoutDialog();
+
+        } else if (id == R.id.nav_tasks) {
+            startActivity(new Intent(this, TasksActivity.class));
+
+        } else if (id == R.id.nav_shop) {
+            navigateToFragment(new ShopFragment());
+
+        } else if (id == R.id.nav_equipment) {
+            navigateToFragment(EquipmentFragment.newInstance(false));
+
+        } else {
+            NavigationUI.onNavDestinationSelected(
+                    navigationView.getMenu().findItem(id), navController);
+        }
+
+        drawerLayout.closeDrawer(GravityCompat.START);
+    }
+
+    private void navigateToFragment(Fragment fragment) {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.nav_host_fragment, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    // ===== MENU =====
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -116,19 +153,23 @@ public class HomeActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    // ===== LOGOUT =====
+
     private void showLogoutDialog() {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.drawer_logout)
                 .setMessage(R.string.logout_confirm)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
-                    FirebaseAuth.getInstance().signOut();
-                    prefsManager.clearSession();
-                    Intent intent = new Intent(HomeActivity.this, AuthActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                })
+                .setPositiveButton(R.string.yes, (dialog, which) -> performLogout())
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void performLogout() {
+        FirebaseAuth.getInstance().signOut();
+        prefsManager.clearSession();
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

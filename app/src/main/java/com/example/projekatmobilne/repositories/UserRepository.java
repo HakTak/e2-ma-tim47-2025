@@ -115,6 +115,9 @@ public class UserRepository {
         Long lastActivityDate = snapshot.getLong("lastActivityDate");
         user.setLastActivityDate(lastActivityDate != null ? lastActivityDate : 0);
 
+        Long basePP = snapshot.getLong("basePP");
+        user.setBasePP(basePP != null ? basePP.intValue() : 0);
+
         // XP History
         Object xpHistoryObj = snapshot.get("xpHistory");
         if (xpHistoryObj instanceof Map) {
