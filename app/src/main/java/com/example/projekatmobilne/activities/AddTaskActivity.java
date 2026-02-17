@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -45,6 +46,8 @@ public class AddTaskActivity extends AppCompatActivity {
     // NOVO: Polja za jednokratni datum
     private Button btnPickDate;
     private long selectedDate = System.currentTimeMillis();
+    private boolean isEditMode = false;
+    private Task editingTask  = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +86,19 @@ public class AddTaskActivity extends AppCompatActivity {
 
         // NOVO: Listener za datum jednokratnog zadatka
         btnPickDate.setOnClickListener(v -> showSingleTaskDatePicker());
+
+        // >>> PROVERA: Da li je EDIT MODE? <
+        String taskId = getIntent().getStringExtra("TASK_ID");
+        if (taskId != null) {
+            isEditMode = true;
+            loadTaskForEditing(taskId);
+        } else {
+            isEditMode = false;
+        }
+
+        // Postavi dugme tekst
+        btnSaveTask.setText(isEditMode ? "SAČUVAJ IZMENE" : "DODAJ ZADATAK");
+
     }
 
     private void initViews() {
@@ -138,6 +154,97 @@ public class AddTaskActivity extends AppCompatActivity {
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    private void loadTaskForEditing(String taskId) {
+        taskViewModel.getTaskById(taskId, new TaskViewModel.TaskByIdCallback() {
+            @Override
+            public void onTaskLoaded(Task task) {
+                editingTask = task;
+                Log.d("ADD_TASK", "Task učitan za editovanje: " + task.getTitle());
+
+                // >>> ČEKAJ DA SE KATEGORIJE UČITAJU PA TEK ONDA POPUNI POLJA <
+                if (allCategories.isEmpty()) {
+                    // Kategorije još nisu učitane - sačekaj observer
+                    categoryViewModel.getAllCategories().observe(AddTaskActivity.this, categories -> {
+                        if (categories != null && !categories.isEmpty()) {
+                            allCategories = categories;
+                            populateFields(editingTask);
+                            disableNonEditableFields();
+                        }
+                    });
+                } else {
+                    // Kategorije su već tu
+                    populateFields(task);
+                    disableNonEditableFields();
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("ADD_TASK", "Greška: " + error);
+                Toast.makeText(AddTaskActivity.this, "Greška: " + error, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+    private void populateFields(Task task) {
+        etTitle.setText(task.getTitle());
+        etDescription.setText(task.getDescription());
+
+        // Postavi vreme
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(task.getExecutionTime());
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+        tvSelectedTime.setText("Vreme: " + hour + ":" + (minute < 10 ? "0" + minute : minute));
+        selectedExecutionTime = task.getExecutionTime();
+
+        // Postavi težinu
+        spinnerDifficulty.setSelection(getDifficultyIndex(task.getDifficulty()));
+
+        // Postavi bitnost
+        spinnerImportance.setSelection(getImportanceIndex(task.getImportance()));
+
+        // Postavi kategoriju
+        for (int i = 0; i < allCategories.size(); i++) {
+            if (allCategories.get(i).getId().equals(task.getCategoryId())) {
+                spinnerCategory.setSelection(i);
+                break;
+            }
+        }
+    }
+
+    private int getDifficultyIndex(Difficulty diff) {
+        switch (diff) {
+            case VERY_EASY: return 0;
+            case EASY: return 1;
+            case HARD: return 2;
+            case EXTREME: return 3;
+            default: return 0;
+        }
+    }
+
+    private int getImportanceIndex(Importance imp) {
+        switch (imp) {
+            case NORMAL: return 0;
+            case IMPORTANT: return 1;
+            case EXTREME: return 2;
+            case SPECIAL: return 3;
+            default: return 0;
+        }
+    }
+
+    private void disableNonEditableFields() {
+        // Disable učestalost (ne može se menjati ONE_TIME ↔ RECURRING)
+        spinnerFrequency.setEnabled(false);
+
+        // Disable recurring opcije
+        layoutRecurringOptions.setVisibility(View.GONE);
+        btnPickDate.setVisibility(View.GONE);
+
+        // Kategoriju možeš dozvoliti ili ne (po želji)
+        // spinnerCategory.setEnabled(false);
+    }
+
     private void loadCategoriesIntoSpinner() {
         categoryViewModel.getAllCategories().observe(this, categories -> {
             if (categories != null) {
@@ -169,6 +276,12 @@ public class AddTaskActivity extends AppCompatActivity {
 
         if (title.isEmpty() || allCategories.isEmpty()) {
             Toast.makeText(this, "Naslov i kategorija su obavezni!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (isEditMode) {
+            // >>> EDIT MODE <
+            updateExistingTask();
             return;
         }
 
@@ -263,6 +376,35 @@ public class AddTaskActivity extends AppCompatActivity {
 
         taskViewModel.insertTask(newTask);
         Toast.makeText(this, "Zadatak sačuvan!", Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    private void updateExistingTask() {
+        // Ažuriraj samo dozvoljena polja
+        editingTask.setTitle(etTitle.getText().toString().trim());
+        editingTask.setDescription(etDescription.getText().toString().trim());
+
+        // Ažuriraj vreme (samo HH:mm)
+        Calendar newTimeCal = Calendar.getInstance();
+        newTimeCal.setTimeInMillis(selectedExecutionTime);
+
+        Calendar oldTimeCal = Calendar.getInstance();
+        oldTimeCal.setTimeInMillis(editingTask.getExecutionTime());
+        oldTimeCal.set(Calendar.HOUR_OF_DAY, newTimeCal.get(Calendar.HOUR_OF_DAY));
+        oldTimeCal.set(Calendar.MINUTE, newTimeCal.get(Calendar.MINUTE));
+
+        editingTask.setExecutionTime(oldTimeCal.getTimeInMillis());
+
+        // Ažuriraj težinu i bitnost
+        editingTask.setDifficulty(Difficulty.valueOf(spinnerDifficulty.getSelectedItem().toString()));
+        editingTask.setImportance(Importance.valueOf(spinnerImportance.getSelectedItem().toString()));
+
+        // Ponovo izračunaj XP
+        editingTask.setTotalXp(editingTask.getDifficulty().getXp() + editingTask.getImportance().getXp());
+
+        // Sačuvaj u bazi
+        taskViewModel.updateTask(editingTask);
+        Toast.makeText(this, "Izmene sačuvane!", Toast.LENGTH_SHORT).show();
         finish();
     }
 

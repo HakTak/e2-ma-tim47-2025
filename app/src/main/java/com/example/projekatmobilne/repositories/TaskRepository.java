@@ -3,6 +3,7 @@ package com.example.projekatmobilne.repositories;
 import android.util.Log;
 import com.example.projekatmobilne.enums.*;
 import com.example.projekatmobilne.models.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.*;
@@ -69,6 +70,101 @@ public class TaskRepository {
                     Log.e("REPO_UPDATE", "❌ Greška pri ažuriranju: " + e.getMessage());
                     callback.onError(e.getMessage());
                 });
+    }
+
+    public void getTaskById(String taskId, TaskByIdCallback callback) {
+        Log.d("REPO_DEBUG", "Tražim task sa ID: " + taskId);
+
+        db.collection("tasks")
+                .document(taskId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        try {
+                            // >>> FIX: Direktno parsiranje bez kastovanja <
+                            Task task = documentSnapshotToTask(documentSnapshot);
+                            Log.d("REPO_DEBUG", "Task pronađen: " + task.getTitle());
+                            callback.onTaskLoaded(task);
+                        } catch (Exception e) {
+                            Log.e("REPO_DEBUG", "Greška pri parsiranju: " + e.getMessage());
+                            callback.onError(e.getMessage());
+                        }
+                    } else {
+                        Log.e("REPO_DEBUG", "Task sa ID " + taskId + " ne postoji!");
+                        callback.onError("Task nije pronađen");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("REPO_DEBUG", "Greška pri učitavanju: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    // >>> NOVA HELPER METODA: DocumentSnapshot → Task <
+    private Task documentSnapshotToTask(DocumentSnapshot doc) {
+        Task task = new Task();
+
+        // >>> FIX: doc.getId() radi na DocumentSnapshot <
+        task.setId(doc.getId());
+        task.setUserId(doc.getString("userId"));
+        task.setCategoryId(doc.getString("categoryId"));
+        task.setTitle(doc.getString("title"));
+        task.setDescription(doc.getString("description"));
+
+        Long xpLong = doc.getLong("totalXp");
+        task.setTotalXp(xpLong != null ? xpLong.intValue() : 0);
+
+        Long execTime = doc.getLong("executionTime");
+        task.setExecutionTime(execTime != null ? execTime : 0L);
+
+        task.setRepeatStartDate(doc.getLong("repeatStartDate"));
+        task.setRepeatEndDate(doc.getLong("repeatEndDate"));
+
+        Long intervalLong = doc.getLong("repeatInterval");
+        task.setRepeatInterval(intervalLong != null ? intervalLong.intValue() : null);
+
+        try {
+            String freq = doc.getString("frequencyType");
+            if (freq != null) task.setFrequencyType(FrequencyType.valueOf(freq));
+            else task.setFrequencyType(FrequencyType.ONE_TIME);
+
+            String diff = doc.getString("difficulty");
+            if (diff != null) task.setDifficulty(Difficulty.valueOf(diff));
+
+            String imp = doc.getString("importance");
+            if (imp != null) task.setImportance(Importance.valueOf(imp));
+
+            String unit = doc.getString("repeatUnit");
+            if (unit != null) task.setRepeatUnit(RepeatUnit.valueOf(unit));
+
+            List<Long> dates = (List<Long>) doc.get("recurringDates");
+            if (dates != null) task.setRecurringDates(dates);
+
+            String statusStr = doc.getString("status");
+            task.setStatus(statusStr != null ? TaskStatus.valueOf(statusStr) : TaskStatus.ACTIVE);
+
+            Map<String, Object> occurrenceStatusesRaw = (Map<String, Object>) doc.get("occurrenceStatuses");
+            if (occurrenceStatusesRaw != null) {
+                Map<String, String> occurrenceStatuses = new HashMap<>();
+                for (Map.Entry<String, Object> entry : occurrenceStatusesRaw.entrySet()) {
+                    occurrenceStatuses.put(entry.getKey(), entry.getValue().toString());
+                }
+                task.setOccurrenceStatuses(occurrenceStatuses);
+            } else {
+                task.setOccurrenceStatuses(new HashMap<>());
+            }
+
+        } catch (Exception e) {
+            Log.e("REPO_ERROR", "Greška kod Enuma: " + e.getMessage());
+        }
+
+        return task;
+    }
+
+    // >>> NOVI CALLBACK INTERFACE <
+    public interface TaskByIdCallback {
+        void onTaskLoaded(Task task);
+        void onError(String error);
     }
 
     // DELETE TASK

@@ -89,6 +89,12 @@ public class CalendarFragment extends Fragment {
         return v;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d("CALENDAR_DEBUG", "onResume() - osvežavam taskove");
+        taskViewModel.loadAllTasks();
+    }
     private long getSelectedDateTimestamp() {
         CalendarDay selectedDay = calendarView.getSelectedDate();
         if (selectedDay == null) {

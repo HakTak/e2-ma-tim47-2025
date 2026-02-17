@@ -1,6 +1,7 @@
 package com.example.projekatmobilne.fragments;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.activities.AddTaskActivity;
 import com.example.projekatmobilne.adapters.DateStatusAdapter;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
@@ -28,6 +30,7 @@ import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -145,7 +148,91 @@ public class TaskDetailFragment extends DialogFragment {
         rootView.findViewById(R.id.btnDeleteTask).setOnClickListener(view -> confirmDeletion());
         rootView.findViewById(R.id.btnCloseDetail).setOnClickListener(view -> dismiss());
         rootView.findViewById(R.id.btnEditTask).setOnClickListener(view -> {
-            Toast.makeText(getContext(), "Izmena dolazi uskoro!", Toast.LENGTH_SHORT).show();
+
+            // >>> PROVERA 1: Da li je task DONE? <
+            if (currentTask.hasAnyCompletedOccurrences() &&
+                    currentTask.getFrequencyType() == FrequencyType.ONE_TIME) {
+
+                new AlertDialog.Builder(getContext())
+                        .setTitle("❌ Izmena zabranjena")
+                        .setMessage("Ne možete menjati završen zadatak.\n\nOvo čuva vašu istoriju.")
+                        .setPositiveButton("U REDU", null)
+                        .show();
+                return;
+            }
+
+            // >>> PROVERA 2: Da li je task vremenski prošao? <
+            // Normalizujemo na početak dana (00:00:00)
+            Calendar today = Calendar.getInstance();
+            today.set(Calendar.HOUR_OF_DAY, 0);
+            today.set(Calendar.MINUTE, 0);
+            today.set(Calendar.SECOND, 0);
+            today.set(Calendar.MILLISECOND, 0);
+            long startOfToday = today.getTimeInMillis();
+
+            if (currentTask.getFrequencyType() == FrequencyType.ONE_TIME) {
+                // Jednokratni: proveri executionTime
+                Calendar taskDay = Calendar.getInstance();
+                taskDay.setTimeInMillis(currentTask.getExecutionTime());
+                taskDay.set(Calendar.HOUR_OF_DAY, 0);
+                taskDay.set(Calendar.MINUTE, 0);
+                taskDay.set(Calendar.SECOND, 0);
+                taskDay.set(Calendar.MILLISECOND, 0);
+
+                if (taskDay.getTimeInMillis() < startOfToday) {
+                    new AlertDialog.Builder(getContext())
+                            .setTitle("❌ Izmena zabranjena")
+                            .setMessage("Ne možete menjati zadatak koji je vremenski prošao.\n\nDatum zadatka je bio pre današnjeg dana.")
+                            .setPositiveButton("U REDU", null)
+                            .show();
+                    return;
+                }
+
+            } else {
+                // Recurring: proveri da li ima IJEDAN budući ACTIVE datum
+                boolean hasFutureActive = false;
+
+                if (currentTask.getRecurringDates() != null) {
+                    for (Long timestamp : currentTask.getRecurringDates()) {
+                        Calendar dateDay = Calendar.getInstance();
+                        dateDay.setTimeInMillis(timestamp);
+                        dateDay.set(Calendar.HOUR_OF_DAY, 0);
+                        dateDay.set(Calendar.MINUTE, 0);
+                        dateDay.set(Calendar.SECOND, 0);
+                        dateDay.set(Calendar.MILLISECOND, 0);
+
+                        boolean isFuture = dateDay.getTimeInMillis() >= startOfToday;
+
+                        String dateKey = String.format(Locale.US, "%04d-%02d-%02d",
+                                dateDay.get(Calendar.YEAR),
+                                dateDay.get(Calendar.MONTH) + 1,
+                                dateDay.get(Calendar.DAY_OF_MONTH));
+
+                        boolean isDone = "DONE".equals(currentTask.getOccurrenceStatuses().get(dateKey));
+
+                        if (isFuture && !isDone) {
+                            hasFutureActive = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasFutureActive) {
+                    new AlertDialog.Builder(getContext())
+                            .setTitle("❌ Izmena zabranjena")
+                            .setMessage("Ne možete menjati ovaj zadatak.\n\nSvi termini su završeni ili vremenski prošli.")
+                            .setPositiveButton("U REDU", null)
+                            .show();
+                    return;
+                }
+            }
+
+            // >>> SVE PROVERE PROŠLE: Otvori edit ekran <
+            Log.d(TAG, "Edit dozvoljen za task: " + currentTask.getTitle());
+            Intent intent = new Intent(getActivity(), AddTaskActivity.class);
+            intent.putExtra("TASK_ID", currentTask.getId());
+            startActivity(intent);
+            dismiss();
         });
 
         updateUI();

@@ -157,4 +157,26 @@ public class TaskViewModel extends AndroidViewModel {
         void onSuccess(int removedCount, boolean taskDeleted);
         void onError(String error);
     }
+
+    // Učitaj pojedinačan task po ID-u
+    public void getTaskById(String taskId, TaskByIdCallback callback) {
+        // >>> DIREKTNO IZ FIRESTORE-a, ne iz keša <
+        repository.getTaskById(taskId, new TaskRepository.TaskByIdCallback() {
+            @Override
+            public void onTaskLoaded(Task task) {
+                callback.onTaskLoaded(task);
+            }
+
+            @Override
+            public void onError(String error) {
+                callback.onError(error);
+            }
+        });
+    }
+
+    public interface TaskByIdCallback {
+        void onTaskLoaded(Task task);
+        void onError(String error);
+    }
+
 }
