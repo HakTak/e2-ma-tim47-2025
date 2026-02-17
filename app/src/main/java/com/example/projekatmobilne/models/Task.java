@@ -1,42 +1,42 @@
 package com.example.projekatmobilne.models;
 
-import com.example.projekatmobilne.enums.Difficulty;
-import com.example.projekatmobilne.enums.FrequencyType;
-import com.example.projekatmobilne.enums.Importance;
-import com.example.projekatmobilne.enums.RepeatUnit;
+import com.example.projekatmobilne.enums.*;
+import java.io.Serializable;
+import java.util.*;
 
-import java.util.HashMap;
-import java.util.Map;
+public class Task implements Serializable {
 
-public class Task {
-
-    private String id; // Firestore ID (String)
-    private String userId; // DODATO - ko je kreirao task
-    private String categoryId; // Firestore Category ID (String)
-
+    private String id;
+    private String userId;
+    private String categoryId;
     private String title;
     private String description;
-
     private FrequencyType frequencyType;
     private Integer repeatInterval;
     private RepeatUnit repeatUnit;
     private Long repeatStartDate;
     private Long repeatEndDate;
-
     private long executionTime;
-
+    private List<Long> recurringDates = new ArrayList<>();
     private Difficulty difficulty;
     private Importance importance;
+    private TaskStatus status;
     private int totalXp;
-    private boolean completed;
+    private Map<String, String> occurrenceStatuses = new HashMap<>();
+
+    // ===================================================
+    // KONSTRUKTORI
+    // ===================================================
 
     // Prazan konstruktor (OBAVEZAN za Firestore)
-    public Task() {}
+    public Task() {
+        this.occurrenceStatuses = new HashMap<>();
+    }
 
     public Task(String userId, String categoryId, String title, String description,
                 FrequencyType frequencyType, Integer repeatInterval, RepeatUnit repeatUnit,
                 Long repeatStartDate, Long repeatEndDate, long executionTime,
-                Difficulty difficulty, Importance importance) {
+                Difficulty difficulty, Importance importance, List<Long> recurringDates) {
 
         this.userId = userId;
         this.categoryId = categoryId;
@@ -50,11 +50,16 @@ public class Task {
         this.executionTime = executionTime;
         this.difficulty = difficulty;
         this.importance = importance;
+        this.recurringDates = recurringDates;
+        this.status = TaskStatus.ACTIVE;
         this.totalXp = difficulty.getXp() + importance.getXp();
-        this.completed = false;
+        this.occurrenceStatuses = new HashMap<>();
     }
 
-    // Konverzija u Map (za Firestore)
+    // ===================================================
+    // FIRESTORE KONVERZIJA
+    // ===================================================
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("userId", userId);
@@ -67,14 +72,19 @@ public class Task {
         map.put("repeatStartDate", repeatStartDate);
         map.put("repeatEndDate", repeatEndDate);
         map.put("executionTime", executionTime);
+        map.put("recurringDates", recurringDates);
         map.put("difficulty", difficulty.name());
         map.put("importance", importance.name());
         map.put("totalXp", totalXp);
-        map.put("completed", completed);
+        map.put("status", status.name());
+        map.put("occurrenceStatuses", occurrenceStatuses);
         return map;
     }
 
-    // GETTERS & SETTERS (promeni long u String gde treba)
+    // ===================================================
+    // GETTERI I SETTERI
+    // ===================================================
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -114,9 +124,25 @@ public class Task {
     public Importance getImportance() { return importance; }
     public void setImportance(Importance importance) { this.importance = importance; }
 
+    public TaskStatus getStatus() { return status; }
+    public void setStatus(TaskStatus status) { this.status = status; }
+
     public int getTotalXp() { return totalXp; }
     public void setTotalXp(int totalXp) { this.totalXp = totalXp; }
 
-    public boolean isCompleted() { return completed; }
-    public void setCompleted(boolean completed) { this.completed = completed; }
+    public List<Long> getRecurringDates() { return recurringDates; }
+    public void setRecurringDates(List<Long> recurringDates) { this.recurringDates = recurringDates; }
+
+    public Map<String, String> getOccurrenceStatuses() { return occurrenceStatuses; }
+    public void setOccurrenceStatuses(Map<String, String> occurrenceStatuses) {
+        this.occurrenceStatuses = occurrenceStatuses != null ? occurrenceStatuses : new HashMap<>();
+    }
+
+    public Long getNextOccurrence(long currentTime) {
+        if (recurringDates == null || recurringDates.isEmpty()) return null;
+        for (Long date : recurringDates) {
+            if (date >= currentTime) return date;
+        }
+        return null;
+    }
 }
