@@ -3,22 +3,22 @@ package com.example.projekatmobilne.fragments;
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.adapters.DateStatusAdapter;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Category;
@@ -26,188 +26,179 @@ import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 
-import androidx.fragment.app.DialogFragment;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
-public class TaskDetailFragment extends DialogFragment  {
+public class TaskDetailFragment extends DialogFragment {
 
     private static final String ARG_TASK = "task_obj";
+    private static final String TAG = "TASK_DETAIL_FRAGMENT";
+
     private TaskViewModel taskViewModel;
-    private CategoryViewModel categoryViewModel; // DODATO
+    private CategoryViewModel categoryViewModel;
     private Task currentTask;
+
+    private View rootView;
+    private List<Category> allCategories;
+
+    // >>> NOVO: Adapter za datume <
+    private DateStatusAdapter dateStatusAdapter;
+    private RecyclerView rvDateStatuses;
 
     public static TaskDetailFragment newInstance(Task task) {
         TaskDetailFragment fragment = new TaskDetailFragment();
         Bundle args = new Bundle();
         args.putSerializable(ARG_TASK, task);
         fragment.setArguments(args);
+        Log.d("TASK_DETAIL_FRAGMENT", "newInstance() pozvan za task: " + task.getTitle());
         return fragment;
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_task_detail, container, false);
+        Log.d(TAG, "onCreateView() - Inflating layout...");
+        rootView = inflater.inflate(R.layout.fragment_task_detail, container, false);
 
-        currentTask = (Task) getArguments().getSerializable(ARG_TASK);
+        if (getArguments() != null) {
+            currentTask = (Task) getArguments().getSerializable(ARG_TASK);
+            Log.d(TAG, "Task učitan: " + (currentTask != null ? currentTask.getTitle() : "NULL"));
+        }
 
-        // INICIJALIZACIJA VIEWMODEL-A
+        if (currentTask == null) {
+            Toast.makeText(getContext(), "Greška: Task nije pronađen", Toast.LENGTH_SHORT).show();
+            dismiss();
+            return rootView;
+        }
+
         taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
-        categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class); // INICIJALIZOVANO
+        categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
 
-        // Povezivanje akcija
-        v.findViewById(R.id.layoutStatusClick).setOnClickListener(view -> showStatusPopup(view));
-        v.findViewById(R.id.btnDeleteTask).setOnClickListener(view -> confirmDeletion());
-        v.findViewById(R.id.btnCloseDetail).setOnClickListener(view -> dismissFragment());
-        v.findViewById(R.id.btnEditTask).setOnClickListener(view -> {
-            Toast.makeText(getContext(), "Otvaranje ekrana za izmenu...", Toast.LENGTH_SHORT).show();
+        // Observer postavljen samo JEDNOM
+        categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
+            allCategories = categories;
+            updateCategoryName();
         });
 
-        // Popunjavanje podataka
-        updateUI(v);
+        // >>> NOVO: Setup RecyclerView za datume <
+        rvDateStatuses = rootView.findViewById(R.id.rvDateStatuses);
+        rvDateStatuses.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        return v;
+        dateStatusAdapter = new DateStatusAdapter((dateTimestamp, newStatus) -> {
+            // Callback kada se promeni status nekog datuma
+            Log.d(TAG, "=== Status promenjen iz DateStatusAdapter ===");
+            Log.d(TAG, "Datum: " + new Date(dateTimestamp));
+            Log.d(TAG, "Novi status: " + newStatus);
+            Log.d(TAG, "Mapa PRE: " + currentTask.getOccurrenceStatuses());
+
+            // Postavi status za taj datum
+            currentTask.setStatusForDate(dateTimestamp, newStatus);
+
+            Log.d(TAG, "Mapa POSLE: " + currentTask.getOccurrenceStatuses());
+
+            // Ažuriraj u bazi
+            taskViewModel.updateTask(currentTask);
+
+            // Osvežavanje adaptera da prikaže novu boju
+            dateStatusAdapter.setData(currentTask);
+
+            Toast.makeText(getContext(), "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
+        });
+
+        rvDateStatuses.setAdapter(dateStatusAdapter);
+
+        // Button listeners
+        rootView.findViewById(R.id.btnDeleteTask).setOnClickListener(view -> confirmDeletion());
+        rootView.findViewById(R.id.btnCloseDetail).setOnClickListener(view -> dismiss());
+        rootView.findViewById(R.id.btnEditTask).setOnClickListener(view -> {
+            Toast.makeText(getContext(), "Izmena dolazi uskoro!", Toast.LENGTH_SHORT).show();
+        });
+
+        updateUI();
+
+        Log.d(TAG, "onCreateView() završen");
+        return rootView;
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        // Ovo osigurava da dijalog bude providan i centriran, bez čudnih okvira
         if (getDialog() != null && getDialog().getWindow() != null) {
-            // 1. Čini prozor samog dijaloga providnim (rešava crne ćoškove)
             getDialog().getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
-            // 2. Postavlja širinu dijaloga na skoro ceo ekran
-            getDialog().getWindow().setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-
-            // 3. Opciono: Zatamnjenje pozadine (ono što si tražio)
-            getDialog().getWindow().setDimAmount(0.7f); // Vrednost od 0 do 1
+            getDialog().getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            getDialog().getWindow().setDimAmount(0.6f);
         }
+        Log.d(TAG, "onStart() - Dialog se prikazuje");
     }
 
-    private void updateUI(View v) {
-        if (currentTask == null || v == null) return;
+    private void updateCategoryName() {
+        if (rootView == null || currentTask == null || allCategories == null) return;
 
-        // 1. Osnovno
-        ((TextView)v.findViewById(R.id.tvDetailTitle)).setText(currentTask.getTitle());
-        ((TextView)v.findViewById(R.id.tvDetailDesc)).setText(currentTask.getDescription());
-        ((TextView)v.findViewById(R.id.tvDetailXp)).setText("+" + currentTask.getTotalXp() + " XP");
+        TextView tvCat = rootView.findViewById(R.id.tvDetailCategory);
+        for (Category c : allCategories) {
+            if (c.getId().equals(currentTask.getCategoryId())) {
+                tvCat.setText(c.getName());
+                Log.d(TAG, "Kategorija ažurirana: " + c.getName());
+                return;
+            }
+        }
+        tvCat.setText("Ostalo");
+    }
 
-        // 2. Status
-        TextView tvStatus = v.findViewById(R.id.tvDetailStatus);
-        tvStatus.setText(translateStatus(currentTask.getStatus()));
-        tvStatus.setTextColor(getStatusColor(currentTask.getStatus()));
+    private void updateUI() {
+        if (currentTask == null || rootView == null) return;
 
-        // 3. Vreme izvršavanja (HH:mm)
-        TextView tvExecTime = v.findViewById(R.id.tvDetailExecutionTime);
+        Log.d(TAG, "updateUI() - Popunjavam polja...");
+
+        // Osnovne informacije
+        ((TextView)rootView.findViewById(R.id.tvDetailTitle)).setText(currentTask.getTitle());
+        ((TextView)rootView.findViewById(R.id.tvDetailDesc)).setText(currentTask.getDescription());
+        ((TextView)rootView.findViewById(R.id.tvDetailXp)).setText("+" + currentTask.getTotalXp() + " XP");
+
+        // Vreme izvršavanja (HH:mm)
+        TextView tvExecTime = rootView.findViewById(R.id.tvDetailExecutionTime);
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         tvExecTime.setText(timeFormat.format(new Date(currentTask.getExecutionTime())));
 
-        // 4. Planirani datumi ponavljanja
-        TextView tvDates = v.findViewById(R.id.tvDetailDates);
-        if (currentTask.getRecurringDates() != null && !currentTask.getRecurringDates().isEmpty()) {
-            StringBuilder sb = new StringBuilder("Planirani termini:\n");
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-            for (Long timestamp : currentTask.getRecurringDates()) {
-                sb.append("• ").append(dateFormat.format(new Date(timestamp))).append("  ");
-            }
-            tvDates.setText(sb.toString());
-        } else {
-            tvDates.setText("Jednokratni zadatak");
-        }
-
-        // 5. Naziv Kategorije (Traženje imena preko ID-ja)
-        TextView tvCat = v.findViewById(R.id.tvDetailCategory);
+        // Kategorija (biće ažurirana preko observer-a)
+        TextView tvCat = rootView.findViewById(R.id.tvDetailCategory);
         tvCat.setText("Učitavanje...");
-        categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
-            if (categories != null) {
-                for (Category c : categories) {
-                    if (c.getId().equals(currentTask.getCategoryId())) {
-                        tvCat.setText(c.getName());
-                        return;
-                    }
-                }
-                tvCat.setText("Ostalo");
-            }
-        });
 
-        // 6. Težina, Bitnost i Učestalost
-        ((TextView)v.findViewById(R.id.tvDetailDifficulty)).setText(translateDifficulty(currentTask.getDifficulty().name()));
-        ((TextView)v.findViewById(R.id.tvDetailImportance)).setText(translateImportance(currentTask.getImportance().name()));
+        // Težina, Bitnost, Učestalost
+        ((TextView)rootView.findViewById(R.id.tvDetailDifficulty)).setText(translateDifficulty(currentTask.getDifficulty().name()));
+        ((TextView)rootView.findViewById(R.id.tvDetailImportance)).setText(translateImportance(currentTask.getImportance().name()));
 
-        String freq = currentTask.getFrequencyType() == FrequencyType.ONE_TIME ? "Jednokratno" : "Ponavljajuće";
-        ((TextView)v.findViewById(R.id.tvDetailFrequency)).setText(freq);
-    }
+        String freqLabel = currentTask.getFrequencyType() == FrequencyType.ONE_TIME ? "Jednokratno" : "Ponavljajuće";
+        ((TextView)rootView.findViewById(R.id.tvDetailFrequency)).setText(freqLabel);
 
-    private void showStatusPopup(View view) {
-        PopupMenu popup = new PopupMenu(getContext(), view);
-        popup.getMenu().add("Postavi: AKTIVAN");
-        popup.getMenu().add("Postavi: URAĐENO");
-        popup.getMenu().add("Postavi: OTKAZANO");
-        if (currentTask.getFrequencyType() == FrequencyType.RECURRING) {
-            popup.getMenu().add("Postavi: PAUZIRANO");
+        // >>> NOVO: Popuni adapter sa datumima <
+        dateStatusAdapter.setData(currentTask);
+
+        // >>> NOVO: Sakrij RecyclerView ako je jednokratni task (opciono) <
+        TextView tvDateHeader = rootView.findViewById(R.id.tvDateStatusHeader);
+        if (currentTask.getFrequencyType() == FrequencyType.ONE_TIME) {
+            tvDateHeader.setText("DATUM I STATUS:");
+        } else {
+            tvDateHeader.setText("PLANIRANI DATUMI I STATUSI:");
         }
 
-        popup.setOnMenuItemClickListener(item -> {
-            TaskStatus newStatus;
-            String choice = item.getTitle().toString();
-            if (choice.contains("AKTIVAN")) newStatus = TaskStatus.ACTIVE;
-            else if (choice.contains("URAĐENO")) newStatus = TaskStatus.DONE;
-            else if (choice.contains("OTKAZANO")) newStatus = TaskStatus.CANCELLED;
-            else newStatus = TaskStatus.PAUSED;
-
-            currentTask.setStatus(newStatus);
-            taskViewModel.updateTask(currentTask);
-            updateUI(getView());
-            return true;
-        });
-        popup.show();
+        Log.d(TAG, "UI potpuno ažuriran");
     }
 
     private void confirmDeletion() {
         new AlertDialog.Builder(getContext())
                 .setTitle("Brisanje zadatka")
-                .setMessage("Da li ste sigurni?")
-                .setPositiveButton("Da", (dialog, which) -> {
+                .setMessage("Da li ste sigurni da želite da obrišete ovaj zadatak?")
+                .setPositiveButton("OBRIŠI", (dialog, which) -> {
                     taskViewModel.deleteTask(currentTask.getId());
-                    dismissFragment();
+                    dismiss();
                 })
-                .setNegativeButton("Ne", null).show();
-    }
-
-    private void dismissFragment() {
-        dismiss();
+                .setNegativeButton("OTKAŽI", null).show();
     }
 
     // PREVODI
-    private String translateStatus(TaskStatus status) {
-        if (status == null) return "AKTIVAN";
-        switch (status) {
-            case DONE: return "URAĐENO";
-            case PAUSED: return "PAUZIRANO";
-            case CANCELLED: return "OTKAZANO";
-            case UPCOMING: return "NADOLAZEĆI";
-            default: return "AKTIVAN";
-        }
-    }
-
-    private int getStatusColor(TaskStatus status) {
-        if (status == null) return Color.parseColor("#27AE60");
-        switch (status) {
-            case DONE: return Color.GRAY;
-            case CANCELLED: return Color.RED;
-            case PAUSED: return Color.parseColor("#F39C12");
-            case UPCOMING: return Color.parseColor("#9B59B6");
-            default: return Color.parseColor("#27AE60");
-        }
-    }
-
     private String translateDifficulty(String diff) {
         switch (diff) {
             case "VERY_EASY": return "Veoma lako";

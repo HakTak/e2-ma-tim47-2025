@@ -6,7 +6,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,12 +15,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.adapters.TaskAdapter;
 import com.example.projekatmobilne.enums.FrequencyType;
+import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.fragments.TaskDetailFragment;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -31,10 +30,9 @@ public class TasksActivity extends AppCompatActivity {
 
     private TaskViewModel taskViewModel;
     private String categoryId;
-
-    private List<Task> masterTaskList = new ArrayList<>(); // Čuva sve taskove iz baze
+    private List<Task> masterTaskList = new ArrayList<>();
     private int currentFilterMode = 0; // 0: Svi, 1: Jednokratni, 2: Ponavljajući
-    private TaskAdapter adapter; // Izvuci adapter kao polje klase
+    private TaskAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,9 +48,15 @@ public class TasksActivity extends AppCompatActivity {
         rv.setLayoutManager(new LinearLayoutManager(this));
 
         adapter = new TaskAdapter(
-                (task, newStatus) -> {
-                    task.setStatus(newStatus); // Postavljamo novi status
-                    taskViewModel.updateTask(task); // Šaljemo u bazu
+                // >>> IZMENJENO: Dodaj dateContext parametar <
+                (task, newStatus, dateContext) -> {
+                    Log.d("TASKS_ACTIVITY", "Status promenjen u " + newStatus + " za datum: " + dateContext);
+
+                    // >>> NOVO: Postavi status za specifičan datum <
+                    task.setStatusForDate(dateContext, newStatus);
+
+                    // Ažuriraj u bazi
+                    taskViewModel.updateTask(task);
                     Toast.makeText(this, "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
                 },
                 task -> showDeleteTaskDialog(task),
@@ -63,26 +67,22 @@ public class TasksActivity extends AppCompatActivity {
         ImageButton btnFilter = findViewById(R.id.btnFilterTasks);
         btnFilter.setOnClickListener(v -> showFilterMenu(v));
 
-        // 3. PRVO postavi posmatrača (Observer)
+        // 3. Observer
         taskViewModel.getAllTasks().observe(this, tasks -> {
             if (tasks != null) {
-                masterTaskList = tasks; // Sačuvaj originalnu listu
-
-                // >>> PROMENA OVDE: Pozivamo applyFilter() koji će uraditi posao i za startni prikaz
+                masterTaskList = tasks;
                 applyFilter();
+                Log.d("UI_DEBUG", "Observer aktivan! Broj taskova nakon filtriranja: " + adapter.getItemCount());
 
-                android.util.Log.d("UI_DEBUG", "Observer aktivan! Broj taskova nakon filtriranja prošlosti: " + adapter.getItemCount());
-
-                // Dodatni test: ako je lista i dalje prazna na ekranu, proveri visinu RV
                 if (adapter.getItemCount() > 0) {
-                    rv.setVisibility(android.view.View.VISIBLE);
+                    rv.setVisibility(View.VISIBLE);
                 }
             } else {
-                android.util.Log.d("UI_DEBUG", "Observer primio NULL listu");
+                Log.d("UI_DEBUG", "Observer primio NULL listu");
             }
         });
 
-        // 4. TEK SAD pokreni učitavanje
+        // 4. Učitaj taskove
         taskViewModel.loadAllTasks();
 
         // 5. FAB
@@ -92,16 +92,22 @@ public class TasksActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // U onCreate u TasksActivity.java, dodaj observer za kategorije:
+        // 6. Kategorije za boje
         CategoryViewModel categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
         categoryViewModel.getAllCategories().observe(this, cats -> {
             if (cats != null) {
-                adapter.setCategories(cats); // Šaljemo kategorije u adapter da bi znao boje
+                adapter.setCategories(cats);
             }
         });
     }
 
-    // DODATA METODA KOJA JE NEDOSTAJALA
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d("TASKS_ACTIVITY", "onResume() - osvežavam listu");
+        taskViewModel.loadAllTasks();
+    }
+
     private void showDeleteTaskDialog(Task task) {
         new AlertDialog.Builder(this)
                 .setTitle("Obriši zadatak")
@@ -120,7 +126,6 @@ public class TasksActivity extends AppCompatActivity {
         fragment.show(getSupportFragmentManager(), "task_detail");
     }
 
-    // 5. Metoda za prikaz Popup menija
     private void showFilterMenu(View view) {
         PopupMenu popup = new PopupMenu(this, view);
         popup.getMenu().add(0, 0, 0, "Prikaži sve");
@@ -136,9 +141,7 @@ public class TasksActivity extends AppCompatActivity {
         popup.show();
     }
 
-    // 6. Glavna logika za filtriranje
     private void applyFilter() {
-
         if (adapter == null) {
             Log.e("FILTER_DEBUG", "Adapter je NULL!");
             return;
@@ -159,12 +162,12 @@ public class TasksActivity extends AppCompatActivity {
         for (Task task : masterTaskList) {
             FrequencyType type = task.getFrequencyType();
 
-            // 1. PROVERA VREMENSKOG ŠTITA (Samo budući i današnji)
+            // 1. PROVERA VREMENSKOG ŠTITA
             if (isTaskInPast(task, startOfToday)) {
-                continue; // Preskoči stare zadatke
+                continue;
             }
 
-            // 2. FILTRIRANJE PO TIPU (Tvoja postojeća logika)
+            // 2. FILTRIRANJE PO TIPU
             if (currentFilterMode == 0) {
                 filteredList.add(task);
             } else if (currentFilterMode == 1) {
@@ -179,8 +182,6 @@ public class TasksActivity extends AppCompatActivity {
         }
 
         Log.d("FILTER_DEBUG", "Kraj. Prikazujem: " + filteredList.size() + " od ukupno " + masterTaskList.size());
-
-        // Ažuriranje adaptera sa filtriranom listom
         adapter.setTasks(filteredList);
     }
 
@@ -192,7 +193,6 @@ public class TasksActivity extends AppCompatActivity {
             if (recurringDates == null || recurringDates.isEmpty()) {
                 return task.getExecutionTime() < startOfToday;
             }
-            // Ponavljajući je u prošlosti samo ako mu je POSLEDNJI planirani datum prošao
             long lastOccurrence = recurringDates.get(recurringDates.size() - 1);
             return lastOccurrence < startOfToday;
         }

@@ -5,24 +5,16 @@ import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.projekatmobilne.enums.FrequencyType;
-import com.example.projekatmobilne.enums.TaskStatus;
+import com.example.projekatmobilne.enums.*;
 import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.R;
-
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
@@ -33,7 +25,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private List<Category> categories = new ArrayList<>();
 
     public interface OnTaskStatusChangeListener {
-        void onStatusChanged(Task task, TaskStatus newStatus);
+        void onStatusChanged(Task task, TaskStatus newStatus, long dateContext); // >>> DODAJ dateContext <
     }
 
     public interface OnTaskLongClickListener {
@@ -75,37 +67,43 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         holder.tvTime.setText(sdf.format(new Date(task.getExecutionTime())));
 
-        // Logika za sledeće ponavljanje
+        // >>> NOVO: Određivanje datumskog konteksta <
+        long dateContext;
         if (task.getFrequencyType() == FrequencyType.RECURRING) {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
 
             Long nextDate = task.getNextOccurrence(cal.getTimeInMillis());
             if (nextDate != null) {
+                dateContext = nextDate;
                 SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy.", Locale.getDefault());
                 holder.tvNextOccurrence.setText("Sledeće: " + dateFormat.format(new Date(nextDate)));
                 holder.tvNextOccurrence.setVisibility(View.VISIBLE);
             } else {
+                dateContext = task.getExecutionTime(); // Fallback
                 holder.tvNextOccurrence.setText("Završeno");
                 holder.tvNextOccurrence.setVisibility(View.VISIBLE);
             }
         } else {
+            dateContext = task.getExecutionTime();
             holder.tvNextOccurrence.setVisibility(View.GONE);
         }
 
-        // --- NOVI DEO: PRIKAZ STATUSA ---
-        if (task.getStatus() != null) {
-            holder.tvStatus.setText(task.getStatus().name());
-            updateStatusColor(holder.tvStatus, task.getStatus());
-        }
+        // >>> IZMENJENO: Koristi getStatusForDate() sa dateContext <
+        TaskStatus currentStatus = task.getStatusForDate(dateContext);
 
-        // Klik na status otvara meni za promenu (umesto checkboxa)
-        holder.tvStatus.setOnClickListener(v -> showStatusMenu(v, task));
+        holder.tvStatus.setText(currentStatus.name());
+        updateStatusColor(holder.tvStatus, currentStatus);
+
+        // >>> PROSLEDI dateContext u meni <
+        long finalDateContext = dateContext;
+        holder.tvStatus.setOnClickListener(v -> showStatusMenu(v, task, finalDateContext));
 
         // Vizuelni efekat: Precrtan tekst ako je DONE
-        if (task.getStatus() == TaskStatus.DONE) {
+        if (currentStatus == TaskStatus.DONE) {
             holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             holder.tvTitle.setAlpha(0.5f);
         } else {
@@ -123,26 +121,24 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             if (clickListener != null) clickListener.onTaskClick(task);
         });
 
-
-        // Pronađi boju kategorije
-        String categoryColor = "#FFFFFF"; // Default bela
+        // Boja kategorije
+        String categoryColor = "#FFFFFF";
         for (Category c : categories) {
             if (c.getId().equals(task.getCategoryId())) {
-                categoryColor = c.getColorHex(); // Uzimamo boju iz modela kategorije
+                categoryColor = c.getColorHex();
                 break;
             }
         }
-
         holder.cardView.setCardBackgroundColor(Color.parseColor(categoryColor));
     }
-
 
     public void setCategories(List<Category> categories) {
         this.categories = categories;
         notifyDataSetChanged();
     }
-    // Pomoćna metoda za Popup meni statusa
-    private void showStatusMenu(View view, Task task) {
+
+    // >>> IZMENJENO: Dodaj dateContext parametar <
+    private void showStatusMenu(View view, Task task, long dateContext) {
         PopupMenu popup = new PopupMenu(view.getContext(), view);
         popup.getMenu().add("Postavi: AKTIVAN");
         popup.getMenu().add("Postavi: URAĐENO");
@@ -161,19 +157,20 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             else if (choice.contains("OTKAZANO")) nextStatus = TaskStatus.CANCELLED;
             else nextStatus = TaskStatus.PAUSED;
 
-            if (statusListener != null) statusListener.onStatusChanged(task, nextStatus);
+            // >>> PROSLEDI dateContext callback-u <
+            if (statusListener != null) statusListener.onStatusChanged(task, nextStatus, dateContext);
             return true;
         });
         popup.show();
     }
 
-    // Pomoćna metoda za boje statusa
     private void updateStatusColor(TextView tv, TaskStatus status) {
         switch (status) {
             case ACTIVE: tv.setTextColor(Color.parseColor("#27AE60")); break;
             case DONE: tv.setTextColor(Color.GRAY); break;
             case CANCELLED: tv.setTextColor(Color.RED); break;
             case PAUSED: tv.setTextColor(Color.parseColor("#F39C12")); break;
+            case UPCOMING: tv.setTextColor(Color.parseColor("#9B59B6")); break;
         }
     }
 
@@ -193,7 +190,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvXp = itemView.findViewById(R.id.tvTaskXp);
             tvNextOccurrence = itemView.findViewById(R.id.tvNextOccurrence);
             tvStatus = itemView.findViewById(R.id.tvTaskStatus);
-            cardView = (com.google.android.material.card.MaterialCardView) itemView;// U XML-u promeni cbCompleted u tvTaskStatus (TextView)
+            cardView = (com.google.android.material.card.MaterialCardView) itemView;
         }
     }
 }

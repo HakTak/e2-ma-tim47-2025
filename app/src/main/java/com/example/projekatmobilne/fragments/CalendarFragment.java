@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -16,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.adapters.CalendarTaskAdapter;
 import com.example.projekatmobilne.enums.FrequencyType;
+import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Category;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.utils.EventDecorator;
@@ -28,13 +30,7 @@ import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.ZoneId;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class CalendarFragment extends Fragment {
 
@@ -56,12 +52,32 @@ public class CalendarFragment extends Fragment {
         rvTasks = v.findViewById(R.id.rvCalendarTasks);
         rvTasks.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Inicijalizacija tvog novog adaptera za slotove
-        calendarAdapter = new CalendarTaskAdapter(task -> openTaskDetail(task));
-        rvTasks.setAdapter(calendarAdapter);
-
         taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
+
+        // >>> IZMENJENO: Dodaj statusChangeListener callback <
+        calendarAdapter = new CalendarTaskAdapter(
+                task -> openTaskDetail(task),
+                () -> getSelectedDateTimestamp(),
+                (task, newStatus, dateContext) -> {
+                    // >>> CALLBACK ZA PROMENU STATUSA <
+                    Log.d("CALENDAR_FRAGMENT", "=== Status promenjen ===");
+                    Log.d("CALENDAR_FRAGMENT", "Task: " + task.getTitle());
+                    Log.d("CALENDAR_FRAGMENT", "Datum: " + new Date(dateContext));
+                    Log.d("CALENDAR_FRAGMENT", "Novi status: " + newStatus);
+                    Log.d("CALENDAR_FRAGMENT", "Mapa PRE: " + task.getOccurrenceStatuses());
+
+                    // >>> POSTAVI STATUS ZA DATUM <
+                    task.setStatusForDate(dateContext, newStatus);
+
+                    Log.d("CALENDAR_FRAGMENT", "Mapa POSLE: " + task.getOccurrenceStatuses());
+
+                    // >>> AŽURIRAJ U BAZI <
+                    taskViewModel.updateTask(task);
+                    Toast.makeText(getContext(), "Status promenjen u " + newStatus.name(), Toast.LENGTH_SHORT).show();
+                }
+        );
+        rvTasks.setAdapter(calendarAdapter);
 
         // Listener za promenu dana
         calendarView.setOnDateChangedListener((widget, date, selected) -> filterTasksForDate(date));
@@ -73,6 +89,16 @@ public class CalendarFragment extends Fragment {
         return v;
     }
 
+    private long getSelectedDateTimestamp() {
+        CalendarDay selectedDay = calendarView.getSelectedDate();
+        if (selectedDay == null) {
+            selectedDay = CalendarDay.today();
+        }
+
+        LocalDate ld = selectedDay.getDate();
+        return ld.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
     private void loadData() {
         categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             this.allCategories = categories;
@@ -81,8 +107,8 @@ public class CalendarFragment extends Fragment {
                 Log.d("CALENDAR_DEBUG", "Stiglo taskova: " + tasks.size());
                 this.allTasks = tasks;
 
-                decorateCalendar(); // Crtanje tačkica
-                filterTasksForDate(calendarView.getSelectedDate()); // Osvežavanje liste slotova
+                decorateCalendar();
+                filterTasksForDate(calendarView.getSelectedDate());
             });
             taskViewModel.loadAllTasks();
         });
@@ -92,7 +118,6 @@ public class CalendarFragment extends Fragment {
         if (allTasks == null || allTasks.isEmpty()) return;
         calendarView.removeDecorators();
 
-        // 1. Mapa: za svaki dan čuvamo SET unikatnih boja (Set sprečava duple tačkice iste boje)
         Map<CalendarDay, Set<Integer>> dayToColors = new HashMap<>();
 
         for (Task task : allTasks) {
@@ -111,12 +136,11 @@ public class CalendarFragment extends Fragment {
             }
         }
 
-        // 2. Grupisanje dana koji imaju istu kombinaciju boja (radi performansi)
         Map<List<Integer>, HashSet<CalendarDay>> colorsToDaysGroup = new HashMap<>();
 
         for (Map.Entry<CalendarDay, Set<Integer>> entry : dayToColors.entrySet()) {
             List<Integer> sortedColors = new ArrayList<>(entry.getValue());
-            Collections.sort(sortedColors); // Sortiramo da bi kombinacije bile uporedive
+            Collections.sort(sortedColors);
 
             if (!colorsToDaysGroup.containsKey(sortedColors)) {
                 colorsToDaysGroup.put(sortedColors, new HashSet<>());
@@ -124,7 +148,6 @@ public class CalendarFragment extends Fragment {
             colorsToDaysGroup.get(sortedColors).add(entry.getKey());
         }
 
-        // 3. Dodavanje dekoratora za svaku kombinaciju boja
         for (Map.Entry<List<Integer>, HashSet<CalendarDay>> entry : colorsToDaysGroup.entrySet()) {
             calendarView.addDecorator(new EventDecorator(entry.getKey(), entry.getValue()));
         }
@@ -149,14 +172,12 @@ public class CalendarFragment extends Fragment {
             if (isToday) dailyTasks.add(t);
         }
 
-        // Zadatak 1: SORTIRANJE PO VREMENU (Vremenski slotovi 00-24h)
         Collections.sort(dailyTasks, (t1, t2) -> Long.compare(t1.getExecutionTime(), t2.getExecutionTime()));
 
         calendarAdapter.setData(dailyTasks, allCategories);
         Log.d("CALENDAR_DEBUG", "Prikazujem " + dailyTasks.size() + " zadataka za " + selectedDay.toString());
     }
 
-    // Pomoćna metoda za konverziju timestamp-a u CalendarDay (ThreeTenABP verzija)
     private CalendarDay convertToCalendarDay(long timestamp) {
         LocalDate ld = Instant.ofEpochMilli(timestamp)
                 .atZone(ZoneId.systemDefault())
