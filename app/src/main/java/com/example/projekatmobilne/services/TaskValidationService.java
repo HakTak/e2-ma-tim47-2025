@@ -11,7 +11,12 @@ public class TaskValidationService {
     // ===================================================
 
     public String canDelete(Task task) {
-        // Zadatak 4: FAILED taskovi ne mogu biti obrisani
+        // CANCELLED taskovi ne mogu biti obrisani
+        if (task.getStatus() == TaskStatus.CANCELLED) {
+            return "Ne možete obrisati otkazani zadatak.\n\nOvo čuva vašu istoriju.";
+        }
+
+        // FAILED taskovi ne mogu biti obrisani
         if (task.getStatus() == TaskStatus.FAILED) {
             return "Ne možete obrisati zadatak koji je označen kao NEUSPEŠAN.\n\nOvo čuva vašu istoriju.";
         }
@@ -25,7 +30,14 @@ public class TaskValidationService {
     }
 
     public String canDeleteOccurrence(long timestamp, TaskStatus status) {
-        // Zadatak 4: FAILED datumi ne mogu biti obrisani
+        // CANCELLED datumi ne mogu biti obrisani
+        if (status == TaskStatus.CANCELLED) {
+            String dateKey = TaskService.timestampToDateKey(timestamp);
+            return "Ne možete obrisati otkazani termin ("
+                    + dateKey + ").\n\nOvo čuva vašu istoriju.";
+        }
+
+        // FAILED datumi ne mogu biti obrisani
         if (status == TaskStatus.FAILED) {
             String dateKey = TaskService.timestampToDateKey(timestamp);
             return "Ne možete obrisati neuspešan termin ("
@@ -45,7 +57,12 @@ public class TaskValidationService {
     // ===================================================
 
     public String canEdit(Task task) {
-        // Zadatak 4: FAILED taskovi ne mogu biti editovani
+        // CANCELLED taskovi ne mogu biti editovani
+        if (task.getStatus() == TaskStatus.CANCELLED) {
+            return "Ne možete menjati otkazani zadatak.\n\nOvo čuva vašu istoriju.";
+        }
+
+        // FAILED taskovi ne mogu biti editovani
         if (task.getStatus() == TaskStatus.FAILED) {
             return "Ne možete menjati zadatak koji je označen kao NEUSPEŠAN.\n\nOvo čuva vašu istoriju.";
         }
@@ -113,10 +130,12 @@ public class TaskValidationService {
             String dateKey = TaskService.timestampToDateKey(timestamp);
             String statusStr = task.getOccurrenceStatuses().get(dateKey);
 
-            // Proveravamo da status nije ni DONE ni FAILED
-            boolean isDoneOrFailed = "DONE".equals(statusStr) || "FAILED".equals(statusStr);
+            // Proveravamo da status nije DONE, FAILED, ili CANCELLED
+            boolean isReadOnly = "DONE".equals(statusStr) ||
+                    "FAILED".equals(statusStr) ||
+                    "CANCELLED".equals(statusStr);
 
-            if (isFuture && !isDoneOrFailed) {
+            if (isFuture && !isReadOnly) {
                 return true;
             }
         }

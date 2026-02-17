@@ -90,7 +90,12 @@ public class TaskService {
     public String canChangeStatus(Task task, long dateContext, TaskStatus currentStatus, TaskStatus newStatus) {
         long now = System.currentTimeMillis();
 
-        // Zadatak 4: FAILED taskovi ne mogu menjati status
+        // CANCELLED taskovi ne mogu menjati status
+        if (currentStatus == TaskStatus.CANCELLED) {
+            return "Ne možete menjati status otkazanog zadatka.";
+        }
+
+        // FAILED taskovi ne mogu menjati status
         if (currentStatus == TaskStatus.FAILED) {
             return "Ne možete menjati status zadatka koji je označen kao NEUSPEŠAN.";
         }
