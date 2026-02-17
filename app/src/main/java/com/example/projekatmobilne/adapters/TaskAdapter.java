@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -98,10 +99,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         holder.tvTime.setText(timeSdf.format(new Date(task.getExecutionTime())));
 
-        // Odredi dateContext kroz servis
         long dateContext = taskService.getDateContext(task);
 
-        // Prikaži sledeći datum za recurring taskove
         if (task.getFrequencyType() == FrequencyType.RECURRING) {
             Long nextDate = task.getNextOccurrence(TaskService.getStartOfToday());
             if (nextDate != null) {
@@ -115,23 +114,24 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.tvNextOccurrence.setVisibility(View.GONE);
         }
 
-        // Status za ovaj dateContext
         TaskStatus currentStatus = taskService.getStatusForDate(task, dateContext);
 
-        holder.tvStatus.setText(currentStatus.name());
+        holder.tvStatus.setText(translateStatus(currentStatus));
         updateStatusColor(holder.tvStatus, currentStatus);
-        holder.tvStatus.setOnClickListener(v -> showStatusMenu(v, task, dateContext));
+        holder.tvStatus.setOnClickListener(v -> showStatusMenu(v, task, dateContext, currentStatus));
 
-        // Precrtan tekst ako je DONE
+        // Vizuelni efekti
         if (currentStatus == TaskStatus.DONE) {
             holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             holder.tvTitle.setAlpha(0.5f);
+        } else if (currentStatus == TaskStatus.FAILED) {
+            holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.tvTitle.setAlpha(0.3f);
         } else {
             holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             holder.tvTitle.setAlpha(1.0f);
         }
 
-        // Click listeneri
         holder.itemView.setOnLongClickListener(v -> {
             if (longClickListener != null) longClickListener.onTaskLongClick(task);
             return true;
@@ -141,7 +141,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             if (clickListener != null) clickListener.onTaskClick(task);
         });
 
-        // Boja kategorije
         holder.cardView.setCardBackgroundColor(getCategoryColor(task.getCategoryId()));
     }
 
@@ -154,7 +153,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     // PRIVATE HELPER METODE
     // ===================================================
 
-    private void showStatusMenu(View view, Task task, long dateContext) {
+    private void showStatusMenu(View view, Task task, long dateContext, TaskStatus currentStatus) {
         PopupMenu popup = new PopupMenu(view.getContext(), view);
         popup.getMenu().add("Postavi: AKTIVAN");
         popup.getMenu().add("Postavi: URAĐENO");
@@ -173,6 +172,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             else if (choice.contains("OTKAZANO")) nextStatus = TaskStatus.CANCELLED;
             else                                  nextStatus = TaskStatus.PAUSED;
 
+            // VALIDACIJA PRE PROMENE STATUSA
+            String validationError = taskService.canChangeStatus(task, dateContext, currentStatus, nextStatus);
+            if (validationError != null) {
+                Toast.makeText(view.getContext(), validationError, Toast.LENGTH_LONG).show();
+                return true;
+            }
+
             if (statusListener != null) statusListener.onStatusChanged(task, nextStatus, dateContext);
             return true;
         });
@@ -187,6 +193,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             case CANCELLED:tv.setTextColor(Color.RED);                   break;
             case PAUSED:   tv.setTextColor(Color.parseColor("#F39C12")); break;
             case UPCOMING: tv.setTextColor(Color.parseColor("#9B59B6")); break;
+            case FAILED:   tv.setTextColor(Color.parseColor("#E74C3C")); break;
+        }
+    }
+
+    private String translateStatus(TaskStatus status) {
+        switch (status) {
+            case ACTIVE:    return "AKTIVAN";
+            case DONE:      return "URAĐENO";
+            case CANCELLED: return "OTKAZANO";
+            case PAUSED:    return "PAUZIRANO";
+            case UPCOMING:  return "NADOLAZEĆI";
+            case FAILED:    return "NEUSPEŠAN";
+            default:        return status.name();
         }
     }
 
