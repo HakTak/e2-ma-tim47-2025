@@ -2,32 +2,39 @@ package com.example.projekatmobilne.activities;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.enums.EquipmentSubtype;
+import com.example.projekatmobilne.enums.FrequencyType;
+import com.example.projekatmobilne.enums.TaskStatus;
 import com.example.projekatmobilne.models.Boss;
+import com.example.projekatmobilne.models.Equipment;
+import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.models.User;
 import com.example.projekatmobilne.repositories.TaskRepository;
-import com.example.projekatmobilne.enums.TaskStatus;
-import com.example.projekatmobilne.models.Task;
+import com.example.projekatmobilne.services.EquipmentService;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
 import com.example.projekatmobilne.viewModels.BossViewModel;
+import com.example.projekatmobilne.viewModels.EquipmentViewModel;
 import com.example.projekatmobilne.viewModels.UserViewModel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class BossFightActivity extends AppCompatActivity {
 
     private static final String TAG = "BOSS_FIGHT_ACTIVITY";
-    private static final int MAX_ATTACKS = 5;
+    private static final int BASE_MAX_ATTACKS = 5;
 
     // Views
     private TextView tvBossName, tvBossHp, tvPlayerPP, tvHitChance;
@@ -37,16 +44,27 @@ public class BossFightActivity extends AppCompatActivity {
 
     // State
     private Boss currentBoss;
+    private User currentUser;
+    private List<Equipment> activeEquipment = new ArrayList<>();
     private int currentBossHp;
-    private int attacksLeft = MAX_ATTACKS;
+    private int maxAttacks = BASE_MAX_ATTACKS;
+    private int attacksLeft;
     private int playerPP;
-    private double hitChance;
+    private double hitChance = 0.5;
+    private boolean fightFinished = false;
     private StringBuilder battleLog = new StringBuilder();
 
-    // Services
+    // ViewModels i servisi
     private BossViewModel bossViewModel;
     private UserViewModel userViewModel;
+    private EquipmentViewModel equipmentViewModel;
+    private EquipmentService equipmentService;
     private SharedPrefsManager prefsManager;
+
+    // Zastavice za učitavanje — borba kreće tek kad su SVE tri učitane
+    private boolean userLoaded      = false;
+    private boolean bossLoaded      = false;
+    private boolean equipmentLoaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +81,6 @@ public class BossFightActivity extends AppCompatActivity {
     // ===================================================
 
     private void initViews() {
-        // Koristi postojeći ActionBar umesto Toolbar-a
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Borba sa Bosom");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -85,10 +102,16 @@ public class BossFightActivity extends AppCompatActivity {
     }
 
     private void initServices() {
-        prefsManager  = new SharedPrefsManager(this);
-        bossViewModel = new ViewModelProvider(this).get(BossViewModel.class);
-        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        prefsManager      = new SharedPrefsManager(this);
+        bossViewModel     = new ViewModelProvider(this).get(BossViewModel.class);
+        userViewModel     = new ViewModelProvider(this).get(UserViewModel.class);
+        equipmentViewModel= new ViewModelProvider(this).get(EquipmentViewModel.class);
+        equipmentService  = new EquipmentService();
     }
+
+    // ===================================================
+    // UČITAVANJE PODATAKA
+    // ===================================================
 
     private void loadData() {
         String userId = prefsManager.getUserId();
@@ -98,31 +121,59 @@ public class BossFightActivity extends AppCompatActivity {
             return;
         }
 
-        // Učitaj korisnika (PP + oprema)
+        // 1. Učitaj korisnika
         userViewModel.loadUser(userId);
         userViewModel.userData.observe(this, user -> {
-            if (user != null) {
-                playerPP = user.getPp();
-                updateEquipmentDisplay(user);
+            if (user != null && !userLoaded) {
+                currentUser = user;
+                playerPP    = user.getPp();
+                userLoaded  = true;
                 Log.d(TAG, "Korisnik učitan | PP: " + playerPP);
+                tryStartFight();
             }
         });
 
-        // Učitaj bossove i pronađi sledećeg
+        // 2. Učitaj bossove
         bossViewModel.loadAllBosses();
         bossViewModel.getPendingBoss().observe(this, boss -> {
-            if (boss != null && currentBoss == null) {
+            if (boss != null && !bossLoaded) {
                 currentBoss   = boss;
                 currentBossHp = boss.getMaxHp();
-                setupBossFight();
-            } else if (boss == null) {
+                bossLoaded    = true;
+                Log.d(TAG, "Boss učitan | Level: " + boss.getLevel() + " HP: " + boss.getMaxHp());
+                tryStartFight();
+            } else if (boss == null && !bossLoaded) {
                 Toast.makeText(this, "Nema bossova za borbu!", Toast.LENGTH_LONG).show();
                 finish();
             }
         });
 
-        // Učitaj zadatke za računanje šanse pogotka
+        // 3. Učitaj aktivnu opremu
+        equipmentViewModel.loadEquipment(userId);
+        equipmentViewModel.equipmentList.observe(this, equipmentList -> {
+            if (equipmentList != null && !equipmentLoaded) {
+                // Filtriramo samo aktivnu opremu
+                activeEquipment.clear();
+                for (Equipment e : equipmentList) {
+                    if (e.isActive()) activeEquipment.add(e);
+                }
+                equipmentLoaded = true;
+                Log.d(TAG, "Oprema učitana | Aktivna: " + activeEquipment.size());
+                tryStartFight();
+            }
+        });
+
+        // 4. Učitaj zadatke za šansu pogotka
         loadHitChance(userId);
+    }
+
+    /**
+     * Kreće borbu tek kada su korisnik, boss i oprema svi učitani.
+     */
+    private void tryStartFight() {
+        if (userLoaded && bossLoaded && equipmentLoaded) {
+            setupBossFight();
+        }
     }
 
     // ===================================================
@@ -130,18 +181,27 @@ public class BossFightActivity extends AppCompatActivity {
     // ===================================================
 
     private void setupBossFight() {
+        // Računaj broj napada — čizme mogu dati +1
+        maxAttacks  = equipmentService.calculateTotalAttacks(activeEquipment);
+        attacksLeft = maxAttacks;
+
+        // Prikaz aktivne opreme (emoji lista)
+        updateEquipmentDisplay();
+
         tvBossName.setText("Boss — Nivo " + currentBoss.getLevel());
         updateHpDisplay();
         updateAttacksDisplay();
         updateRewardsDisplay();
         btnAttack.setEnabled(true);
+
         addToBattleLog("Borba počinje! Boss ima " + currentBoss.getMaxHp() + " HP.");
-        Log.d(TAG, "Borba postavljena | Boss level: " + currentBoss.getLevel()
-                + " | HP: " + currentBossHp);
+        if (maxAttacks > BASE_MAX_ATTACKS) {
+            addToBattleLog("🥾 Čizme su aktivne! Imaš " + maxAttacks + " napada.");
+        }
     }
 
     // ===================================================
-    // RAČUNANJE ŠANSE POGOTKA IZ ZADATAKA
+    // ŠANSA POGOTKA
     // ===================================================
 
     private void loadHitChance(String userId) {
@@ -149,14 +209,16 @@ public class BossFightActivity extends AppCompatActivity {
         taskRepository.getAllTasks(userId, new TaskRepository.TasksCallback() {
             @Override
             public void onTasksLoaded(List<Task> tasks) {
-                hitChance = calculateHitChance(tasks);
+                double baseChance = calculateBaseHitChance(tasks);
+                // Shield dodaje bonus na šansu
+                hitChance = equipmentService.calculateAttackChance(
+                        baseChance * 100, activeEquipment) / 100.0;
                 tvHitChance.setText("Šansa pogotka: " + (int)(hitChance * 100) + "%");
-                Log.d(TAG, "Šansa pogotka: " + (int)(hitChance * 100) + "%");
+                Log.d(TAG, "Šansa pogotka (sa opremom): " + (int)(hitChance * 100) + "%");
             }
 
             @Override
             public void onError(String error) {
-                // Ako ne možemo učitati zadatke, koristimo 50% kao default
                 hitChance = 0.5;
                 tvHitChance.setText("Šansa pogotka: 50% (default)");
                 Log.e(TAG, "Greška pri učitavanju zadataka: " + error);
@@ -164,29 +226,18 @@ public class BossFightActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * Računa šansu pogotka na osnovu uspešnosti zadataka u poslednjoj etapi.
-     * Etapa = svi zadaci kreirani između prethodnog i trenutnog levela korisnika.
-     * Uspešnost = DONE / (DONE + FAILED + CANCELLED) — bez PAUSED i UPCOMING
-     */
-    private double calculateHitChance(List<Task> tasks) {
+    private double calculateBaseHitChance(List<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) return 0.5;
 
-        int done      = 0;
-        int failed    = 0;
-        int cancelled = 0;
+        int done = 0, failed = 0, cancelled = 0;
 
         for (Task task : tasks) {
-            // ONE_TIME taskovi — gledamo direktan status
-            if (task.getFrequencyType() ==
-                    com.example.projekatmobilne.enums.FrequencyType.ONE_TIME) {
+            if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
                 TaskStatus s = task.getStatus();
-                if (s == TaskStatus.DONE)      done++;
+                if (s == TaskStatus.DONE)           done++;
                 else if (s == TaskStatus.FAILED)    failed++;
                 else if (s == TaskStatus.CANCELLED) cancelled++;
-
             } else {
-                // RECURRING taskovi — gledamo svaki occurrence posebno
                 if (task.getOccurrenceStatuses() != null) {
                     for (String statusStr : task.getOccurrenceStatuses().values()) {
                         try {
@@ -206,7 +257,8 @@ public class BossFightActivity extends AppCompatActivity {
         if (total == 0) return 0.5;
 
         double chance = (double) done / total;
-        Log.d(TAG, "Uspešnost: " + done + "/" + total + " = " + (int)(chance * 100) + "%");
+        Log.d(TAG, "Uspešnost zadataka: " + done + "/" + total
+                + " = " + (int)(chance * 100) + "%");
         return chance;
     }
 
@@ -215,7 +267,7 @@ public class BossFightActivity extends AppCompatActivity {
     // ===================================================
 
     private void performAttack() {
-        if (attacksLeft <= 0 || currentBoss == null) return;
+        if (attacksLeft <= 0 || fightFinished) return;
 
         attacksLeft--;
         boolean hit = new Random().nextDouble() < hitChance;
@@ -223,8 +275,8 @@ public class BossFightActivity extends AppCompatActivity {
         if (hit) {
             currentBossHp -= playerPP;
             if (currentBossHp < 0) currentBossHp = 0;
-            addToBattleLog("⚔ Pogodak! Naneo si " + playerPP + " štete. "
-                    + "Boss HP: " + currentBossHp);
+            addToBattleLog("⚔ Pogodak! Naneo si " + playerPP
+                    + " štete. Boss HP: " + currentBossHp);
         } else {
             addToBattleLog("💨 Promašaj! Boss se izmaknuo.");
         }
@@ -232,7 +284,6 @@ public class BossFightActivity extends AppCompatActivity {
         updateHpDisplay();
         updateAttacksDisplay();
 
-        // Proveri kraj borbe
         if (currentBossHp <= 0) {
             endFight(true);
         } else if (attacksLeft <= 0) {
@@ -245,40 +296,108 @@ public class BossFightActivity extends AppCompatActivity {
     // ===================================================
 
     private void endFight(boolean bossDefeated) {
+        fightFinished = true;
         btnAttack.setEnabled(false);
 
         if (bossDefeated) {
-            int coinsEarned = currentBoss.getCoins();
-            addToBattleLog("🏆 POBEDA! Boss je poražen!");
-            addToBattleLog("💰 Osvojeno: " + coinsEarned + " coins");
-
-            bossViewModel.markBossDefeated(currentBoss,
-                    new BossViewModel.UpdateDoneCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Log.d(TAG, "Boss označen kao poražen");
-                            // TODO: Korak 4 — dodeli coins korisniku + šansa za opremu
-                        }
-                        @Override
-                        public void onError(String error) {
-                            Log.e(TAG, "Greška: " + error);
-                        }
-                    });
-
+            handleVictory();
         } else {
-            // Boss nije poražen — provjeri koliko HP je ostalo
             boolean halfDefeated = currentBossHp <= (currentBoss.getMaxHp() / 2);
-
-            if (halfDefeated) {
-                int halfCoins = currentBoss.getCoins() / 2;
-                addToBattleLog("⚠ Boss nije poražen, ali si umanjio 50% HP!");
-                addToBattleLog("💰 Osvojeno: " + halfCoins + " coins (polovično)");
-                // TODO: Korak 4 — dodeli polovinu coins-a
-            } else {
-                addToBattleLog("💀 PORAZ! Nisi uspio umanjiti 50% HP bossa.");
-                addToBattleLog("💰 Osvojeno: 0 coins");
-            }
+            handleDefeat(halfDefeated);
         }
+    }
+
+    private void handleVictory() {
+        // Coins sa luk multiplikatorom
+        double coinMultiplier = equipmentService.calculateCoinMultiplier(activeEquipment);
+        int coinsEarned = (int)(currentBoss.getCoins() * coinMultiplier);
+
+        addToBattleLog("🏆 POBEDA! Boss je poražen!");
+        addToBattleLog("💰 Osvajate: " + coinsEarned + " coins"
+                + (coinMultiplier > 1.0 ? " (luk bonus!)" : ""));
+
+        String userId = prefsManager.getUserId();
+
+        // 1. Dodeli coins korisniku
+        userViewModel.addCoins(userId, coinsEarned);
+
+        // 2. Označi bossa kao poraženog
+        bossViewModel.markBossDefeated(currentBoss, new BossViewModel.UpdateDoneCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Boss označen kao poražen");
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Greška markBossDefeated: " + error);
+            }
+        });
+
+        // 3. Šansa za opremu (20%) — koristi EquipmentService.grantBossLootEquipment
+        equipmentService.grantBossLootEquipment(currentUser, activeEquipment,
+                new EquipmentService.LootCallback() {
+                    @Override
+                    public void onLoot(EquipmentSubtype received, boolean wasUpgrade) {
+                        String lootMsg = wasUpgrade
+                                ? "🗡 Oružje unapređeno: " + received.name()
+                                : "🎁 Nova oprema: " + received.name();
+                        addToBattleLog(lootMsg);
+                        Log.d(TAG, "Loot dobijen: " + received.name());
+                        finalizeFight(userId);
+                    }
+                    @Override
+                    public void onNoLoot() {
+                        addToBattleLog("🎲 Nisi dobio opremu ovog puta.");
+                        finalizeFight(userId);
+                    }
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "Greška pri loot-u: " + error);
+                        finalizeFight(userId);
+                    }
+                });
+    }
+
+    private void handleDefeat(boolean halfDefeated) {
+        String userId = prefsManager.getUserId();
+
+        if (halfDefeated) {
+            int halfCoins = (int)(currentBoss.getCoins() / 2.0
+                    * equipmentService.calculateCoinMultiplier(activeEquipment));
+            addToBattleLog("⚠ Boss nije poražen, ali si umanjio 50% HP!");
+            addToBattleLog("💰 Osvojeno: " + halfCoins + " coins (polovično)");
+            userViewModel.addCoins(userId, halfCoins);
+
+            // Polovina šanse za opremu (10%)
+            if (new Random().nextInt(100) < 10) {
+                equipmentService.grantBossLootEquipment(currentUser, activeEquipment,
+                        new EquipmentService.LootCallback() {
+                            @Override
+                            public void onLoot(EquipmentSubtype received, boolean wasUpgrade) {
+                                addToBattleLog("🎁 Ipak si dobio opremu: " + received.name());
+                                finalizeFight(userId);
+                            }
+                            @Override
+                            public void onNoLoot() { finalizeFight(userId); }
+                            @Override
+                            public void onError(String error) { finalizeFight(userId); }
+                        });
+            } else {
+                finalizeFight(userId);
+            }
+        } else {
+            addToBattleLog("💀 PORAZ! Nisi uspio umanjiti 50% HP bossa.");
+            addToBattleLog("💰 Osvojeno: 0 coins");
+            finalizeFight(userId);
+        }
+    }
+
+    /**
+     * Poziva se na kraju svake borbe — ažurira opremu (trajanje, potrošeni napici itd.)
+     */
+    private void finalizeFight(String userId) {
+        equipmentViewModel.onBossFightFinished(currentUser);
+        Log.d(TAG, "Borba završena, oprema ažurirana");
     }
 
     // ===================================================
@@ -292,24 +411,50 @@ public class BossFightActivity extends AppCompatActivity {
     }
 
     private void updateAttacksDisplay() {
-        tvAttacksLeft.setText("Preostali napadi: " + attacksLeft + " / " + MAX_ATTACKS);
+        tvAttacksLeft.setText("Preostali napadi: " + attacksLeft + " / " + maxAttacks);
         tvPlayerPP.setText("⚔ Tvoja snaga (PP): " + playerPP);
     }
 
     private void updateRewardsDisplay() {
-        tvPotentialRewards.setText("💰 " + currentBoss.getCoins()
-                + " coins  |  20% šansa za opremu");
+        double multiplier = equipmentService.calculateCoinMultiplier(activeEquipment);
+        int displayCoins  = (int)(currentBoss.getCoins() * multiplier);
+        tvPotentialRewards.setText("💰 " + displayCoins + " coins  |  20% šansa za opremu");
     }
 
-    private void updateEquipmentDisplay(User user) {
-        // Kolega čuva aktivnu opremu — za sada prikazujemo PP kao potvrdu
-        // TODO: Korak — kada kolega preda strukturu aktivne opreme, prikazati emoji listu
-        tvActiveEquipment.setText("PP: " + user.getPp());
-        tvPlayerPP.setText("⚔ Tvoja snaga (PP): " + user.getPp());
+    private void updateEquipmentDisplay() {
+        if (activeEquipment.isEmpty()) {
+            tvActiveEquipment.setText("Nema aktivne opreme");
+            return;
+        }
+
+        StringBuilder emojis = new StringBuilder();
+        for (Equipment e : activeEquipment) {
+            switch (e.getSubtype()) {
+                case POTION_20:      emojis.append("🧪 "); break;
+                case POTION_40:      emojis.append("⚗️ "); break;
+                case POTION_PERM_5:  emojis.append("💧 "); break;
+                case POTION_PERM_10: emojis.append("💦 "); break;
+                case GLOVES:         emojis.append("🧤 "); break;
+                case SHIELD:         emojis.append("🛡️ "); break;
+                case BOOTS:          emojis.append("👢 "); break;
+                case SWORD:          emojis.append("⚔️ "); break;
+                case BOW:            emojis.append("🏹 "); break;
+            }
+        }
+        tvActiveEquipment.setText(emojis.toString().trim());
     }
 
     private void addToBattleLog(String message) {
         battleLog.insert(0, message + "\n");
         tvBattleLog.setText(battleLog.toString());
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
