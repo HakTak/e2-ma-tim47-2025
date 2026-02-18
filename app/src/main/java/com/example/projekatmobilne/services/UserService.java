@@ -154,6 +154,11 @@ public class UserService {
             user.setPp(user.getPp() + totalPPGained);
             user.setTitle(levelService.getTitleForLevel(newLevel));
 
+            // Dodaj timestamp level-upa
+            List<Long> timestamps = user.getLevelUpTimestamps();
+            timestamps.add(System.currentTimeMillis());
+            user.setLevelUpTimestamps(timestamps);
+
             // Sačuvaj SVE promene u Firestore
             Map<String, Object> updates = new HashMap<>();
             updates.put("xp", user.getXp());
@@ -161,6 +166,8 @@ public class UserService {
             updates.put("level", user.getLevel());
             updates.put("pp", user.getPp());
             updates.put("title", user.getTitle());
+            updates.put("levelUpTimestamps", user.getLevelUpTimestamps());
+
 
             int finalNewLevel = newLevel;
             int finalPPGained = totalPPGained;

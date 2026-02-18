@@ -32,6 +32,7 @@ public class User {
     private List<String> badges;
     private List<String> equipment;
     private long createdAt;
+    private List<Long> levelUpTimestamps;
 
     // Prazan konstruktor (OBAVEZAN za Firestore)
     public User() {
@@ -47,6 +48,7 @@ public class User {
         this.lastActivityDate = 0;
         this.basePP = 0;
         this.oneSignalPlayerId = null;
+        this.levelUpTimestamps = new ArrayList<>();
     }
 
     // Konstruktor za kreiranje novog usera
@@ -66,6 +68,7 @@ public class User {
         this.xpHistory = new HashMap<>();
         this.createdAt = System.currentTimeMillis();
         this.oneSignalPlayerId = null;
+        this.levelUpTimestamps = new ArrayList<>();
 
         this.activeDays = 0;
         this.tasksCreated = 0;
@@ -74,6 +77,7 @@ public class User {
         this.longestStreak = 0;
         this.currentStreak = 0;
         this.lastActivityDate = 0;
+
     }
 
     // Konverzija u Map (za Firestore)
@@ -101,6 +105,7 @@ public class User {
         map.put("currentStreak", currentStreak);
         map.put("lastActivityDate", lastActivityDate);
         map.put("xpHistory", xpHistory);
+        map.put("levelUpTimestamps", levelUpTimestamps);
         return map;
     }
 
@@ -164,6 +169,13 @@ public class User {
 
     public long getLastActivityDate() { return lastActivityDate; }
     public void setLastActivityDate(long lastActivityDate) { this.lastActivityDate = lastActivityDate; }
+
+    public List<Long> getLevelUpTimestamps() {
+        return levelUpTimestamps != null ? levelUpTimestamps : new ArrayList<>();
+    }
+    public void setLevelUpTimestamps(List<Long> levelUpTimestamps) {
+        this.levelUpTimestamps = levelUpTimestamps;
+    }
 
     public Map<String, Integer> getXpHistory() {
         return xpHistory != null ? xpHistory : new HashMap<>();

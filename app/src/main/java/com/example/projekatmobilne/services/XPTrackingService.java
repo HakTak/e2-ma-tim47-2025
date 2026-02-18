@@ -43,8 +43,12 @@ public class XPTrackingService {
 
     private final SharedPreferences prefs;
 
+
     public XPTrackingService(Context context) {
-        this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // Vezujemo prefs za userId iz SharedPrefsManager
+        String userId = new com.example.projekatmobilne.utils.SharedPrefsManager(context).getUserId();
+        String prefsName = PREFS_NAME + (userId != null ? "_" + userId : "_guest");
+        this.prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE);
         resetCountersIfNeeded();
     }
 

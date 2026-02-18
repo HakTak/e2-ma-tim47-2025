@@ -28,6 +28,8 @@ import com.example.projekatmobilne.repositories.CategoryRepository;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.List;
+
 public class CategoriesFragment extends Fragment {
 
     private CategoryViewModel viewModel;
@@ -213,6 +215,12 @@ public class CategoriesFragment extends Fragment {
             String name = inputName.getText().toString().trim();
             if (!name.isEmpty()) {
                 selectedColor = localSelectedColor[0];
+                // ← DODAJ OVO — provjera duplikata boje
+                String colorError = viewModel.validateColorUnique(selectedColor);
+                if (colorError != null) {
+                    Toast.makeText(getContext(), colorError, Toast.LENGTH_LONG).show();
+                    return;
+                }
                 viewModel.insertCategory(name, selectedColor);
                 Toast.makeText(getContext(), "Dodato: " + name, Toast.LENGTH_SHORT).show();
             } else {

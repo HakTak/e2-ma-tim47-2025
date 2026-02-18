@@ -81,6 +81,8 @@ public class HomeActivity extends AppCompatActivity {
             handleDrawerItemSelected(item.getItemId());
             return true;
         });
+
+        handleNavigationIntent(getIntent());
     }
 
     private void initBackPressHandler() {
@@ -102,11 +104,12 @@ public class HomeActivity extends AppCompatActivity {
             showLogoutDialog();
 
         } else if (id == R.id.nav_tasks) {
-            // Tasks ide u poseban Activity
             startActivity(new Intent(this, TasksActivity.class));
 
+        } else if (id == R.id.nav_boss_fight) {
+            startActivity(new Intent(this, BossFightActivity.class));
+
         } else {
-            // SVE ostalo (uključujući shop i equipment) ide kroz NavController
             navController.navigate(id);
         }
 
@@ -144,5 +147,23 @@ public class HomeActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNavigationIntent(intent);
+    }
+
+    private void handleNavigationIntent(Intent intent) {
+        if (intent == null) return;
+        String navigateTo = intent.getStringExtra("navigateTo");
+        if ("equipment".equals(navigateTo)) {
+            boolean fromBossFight = intent.getBooleanExtra("fromBossFight", false);
+            Bundle args = new Bundle();
+            args.putBoolean("fromBossFight", fromBossFight);
+            navController.navigate(R.id.nav_equipment, args);
+        }
     }
 }

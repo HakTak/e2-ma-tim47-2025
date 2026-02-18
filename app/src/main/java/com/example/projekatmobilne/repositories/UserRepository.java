@@ -4,6 +4,7 @@ import com.example.projekatmobilne.database.FirestoreManager;
 import com.example.projekatmobilne.models.User;
 import com.google.firebase.firestore.DocumentSnapshot;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +138,14 @@ public class UserRepository {
         user.setBadges((List<String>) snapshot.get("badges"));
         user.setEquipment((List<String>) snapshot.get("equipment"));
         user.setOneSignalPlayerId(snapshot.getString("oneSignalPlayerId"));
+
+        // Level-up timestamps
+        try {
+            List<Long> timestamps = (List<Long>) snapshot.get("levelUpTimestamps");
+            user.setLevelUpTimestamps(timestamps != null ? timestamps : new ArrayList<>());
+        } catch (Exception e) {
+            user.setLevelUpTimestamps(new ArrayList<>());
+        }
 
         return user;
     }

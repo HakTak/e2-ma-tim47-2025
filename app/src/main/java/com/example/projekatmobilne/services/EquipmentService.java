@@ -170,16 +170,21 @@ public class EquipmentService {
         int newPP = user.getPp();
         int newBasePP = user.getBasePP();
 
+        // Na početku activateEquipment(), prije switch-a
+        int effectiveBase = user.getBasePP() > 0 ? user.getBasePP() : user.getPp();
+        if (user.getBasePP() == 0) {
+            newBasePP = user.getPp(); // postavi basePP = trenutni PP
+        }
         switch (equipment.getSubtype()) {
             case POTION_20:
                 // Jednokratno +20% od basePP
-                ppBonus = (int) (user.getBasePP() * 0.20);
+                ppBonus = (int) (effectiveBase * 0.20);
                 newPP += ppBonus;
                 break;
 
             case POTION_40:
                 // Jednokratno +40% od basePP
-                ppBonus = (int) (user.getBasePP() * 0.40);
+                ppBonus = (int) (effectiveBase * 0.40);
                 newPP += ppBonus;
                 break;
 
@@ -200,7 +205,7 @@ public class EquipmentService {
             case GLOVES:
                 // +10% PP od basePP, traje 2 borbe
                 // Ako korisnik već ima aktivne rukavice, bonusi se sabiraju
-                ppBonus = (int) (user.getBasePP() * 0.10);
+                ppBonus = (int) (effectiveBase * 0.10);
                 newPP += ppBonus;
                 break;
 
@@ -212,7 +217,7 @@ public class EquipmentService {
 
             case SWORD:
                 // Trajno +5% PP (weapon bonus)
-                ppBonus = (int) (user.getBasePP() * equipment.getWeaponBonus());
+                ppBonus = (int) (effectiveBase * equipment.getWeaponBonus());
                 newPP += ppBonus;
                 newBasePP += ppBonus;
                 break;
@@ -535,6 +540,20 @@ public class EquipmentService {
             }
         }
         return multiplier;
+    }
+
+    // U EquipmentService.java — dodaj ovu metodu:
+    public int calculateEffectivePP(int basePP, List<Equipment> activeEquipment) {
+        int totalPP = basePP;
+        /*for (Equipment e : activeEquipment) {
+            if (e.isActive() && e.getPpBonusApplied() > 0) {
+                // Samo jednokratni i clothing bonusi (ne permanentni — već su u basePP)
+                if (e.isSingleUse() || e.getType() == EquipmentType.CLOTHING) {
+                    totalPP += e.getPpBonusApplied();
+                }
+            }
+        }*/
+        return totalPP;
     }
 
     // ===================================================================

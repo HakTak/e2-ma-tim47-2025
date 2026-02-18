@@ -1,5 +1,6 @@
 package com.example.projekatmobilne.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projekatmobilne.R;
+import com.example.projekatmobilne.activities.BossFightActivity;
 import com.example.projekatmobilne.adapters.EquipmentAdapter;
 import com.example.projekatmobilne.enums.EquipmentType;
 import com.example.projekatmobilne.models.Equipment;
@@ -98,7 +100,8 @@ public class EquipmentFragment extends Fragment {
         if (fromBossFight) {
             btnGoToBossFight.setVisibility(View.VISIBLE);
             btnGoToBossFight.setOnClickListener(v -> {
-                Navigation.findNavController(requireView()).popBackStack();
+                Intent intent = new Intent(requireContext(), BossFightActivity.class);
+                startActivity(intent);
             });
         }
 
@@ -125,6 +128,16 @@ public class EquipmentFragment extends Fragment {
                 0, 0
         );
         rvEquipment.setAdapter(adapter);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        String userId = prefsManager.getUserId();
+        if (userId != null) {
+            equipmentViewModel.loadUser(userId);
+            equipmentViewModel.loadEquipment(userId);
+        }
     }
 
     private void setupTabs() {

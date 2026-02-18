@@ -18,9 +18,11 @@ import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.adapters.TaskAdapter;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.fragments.TaskDetailFragment;
+import com.example.projekatmobilne.models.Boss;
 import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.services.TaskService;
 import com.example.projekatmobilne.services.TaskValidationService;
+import com.example.projekatmobilne.viewModels.BossViewModel;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
 
@@ -42,6 +44,29 @@ public class TasksActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tasks);
+
+        /*// ===== PRIVREMENI TEST - OBRIŠI POSLE =====
+        BossViewModel bossViewModel = new ViewModelProvider(this).get(BossViewModel.class);
+
+        bossViewModel.ensureBossExistsForLevel(1, new BossViewModel.BossReadyCallback() {
+            @Override
+            public void onReady(Boss boss) {
+                Log.d("BOSS_TEST", "Boss spreman! Level: " + boss.getLevel()
+                        + " | HP: " + boss.getMaxHp()
+                        + " | Coins: " + boss.getCoins()
+                        + " | ID: " + boss.getId());
+                Toast.makeText(TasksActivity.this,
+                        "Boss level 1 kreiran! HP: " + boss.getMaxHp(),
+                        Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("BOSS_TEST", "Greška: " + error);
+                Toast.makeText(TasksActivity.this, "Greška: " + error, Toast.LENGTH_LONG).show();
+            }
+        });
+       // ===== KRAJ TESTA =====*/
 
         // 1. Inicijalizacija
         categoryId = getIntent().getStringExtra("CATEGORY_ID");

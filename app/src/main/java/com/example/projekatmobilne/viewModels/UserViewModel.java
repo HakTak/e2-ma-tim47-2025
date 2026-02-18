@@ -1,6 +1,7 @@
 package com.example.projekatmobilne.viewModels;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -78,5 +79,21 @@ public class UserViewModel extends AndroidViewModel {
             this.newLevel = newLevel;
             this.ppGained = ppGained;
         }
+    }
+
+    // ===== DODAJ COINS =====
+    public void addCoins(String userId, int coinsAmount) {
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .update("coins", com.google.firebase.firestore.FieldValue.increment(coinsAmount))
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("USER_VIEWMODEL", "Coins dodati: +" + coinsAmount);
+                    loadUser(userId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("USER_VIEWMODEL", "Greška pri dodavanju coins: " + e.getMessage());
+                    errorMessage.postValue(e.getMessage());
+                });
     }
 }

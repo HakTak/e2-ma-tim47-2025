@@ -100,6 +100,13 @@ public class TaskService {
             return "Ne možete menjati status zadatka koji je označen kao NEUSPEŠAN.";
         }
 
+        // DONE taskovi ne mogu menjati status
+        if (currentStatus == TaskStatus.DONE) {
+            return "Ne možete menjati status zadatka koji je označen kao ZAVRŠEN.";
+        }
+
+
+
         // Zadatak 1: Samo ACTIVE može prelaziti u DONE/CANCELLED/PAUSED
         if (currentStatus != TaskStatus.ACTIVE &&
                 (newStatus == TaskStatus.DONE || newStatus == TaskStatus.CANCELLED || newStatus == TaskStatus.PAUSED)) {

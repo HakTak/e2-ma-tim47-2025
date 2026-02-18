@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#1a1a2e"
+    android:padding="24dp">
+
+    <!-- NASLOV -->
+    <TextView
+        android:id="@+id/tvRewardTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Tresi telefon da otvoriš kovčeg!"
+        android:textColor="#f5a623"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
+
+    <!-- KOVČEG ANIMACIJA -->
+    <ImageView
+        android:id="@+id/ivChest"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:src="@drawable/chest1"
+        android:scaleType="fitCenter"/>
+
+    <!-- NAGRADE (skriveno dok se kovčeg ne otvori) -->
+    <LinearLayout
+        android:id="@+id/layoutRewards"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="32dp">
+
+        <!-- COINS -->
+        <TextView
+            android:id="@+id/tvRewardCoins"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#f5a623"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- OPREMA (ako je dobivena) -->
+        <TextView
+            android:id="@+id/tvRewardEquipment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff"
+            android:textSize="40sp"
+            android:visibility="gone"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- DUGME ZA NASTAVAK -->
+        <Button
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:backgroundTint="#e94560"
+            android:text="NASTAVI"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
+</LinearLayout>
