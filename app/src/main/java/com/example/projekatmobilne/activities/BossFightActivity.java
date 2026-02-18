@@ -51,7 +51,7 @@ public class BossFightActivity extends AppCompatActivity implements SensorEventL
     // Views
     private TextView tvBossName, tvBossHp, tvPlayerPP, tvHitChance;
     private TextView tvAttacksLeft, tvActiveEquipment, tvPotentialRewards, tvBattleLog;
-    private ProgressBar progressBossHp;
+    private ProgressBar progressBossHp, progressPlayerPP;
     private Button btnAttack;
 
     // State
@@ -130,6 +130,7 @@ public class BossFightActivity extends AppCompatActivity implements SensorEventL
         tvBattleLog        = findViewById(R.id.tvBattleLog);
         progressBossHp     = findViewById(R.id.progressBossHp);
         btnAttack          = findViewById(R.id.btnAttack);
+        progressPlayerPP   = findViewById(R.id.progressPlayerPP);
 
         btnAttack.setEnabled(false);
         btnAttack.setOnClickListener(v -> performAttack());
@@ -220,6 +221,7 @@ public class BossFightActivity extends AppCompatActivity implements SensorEventL
 
         // NAPOMENA: loadHitChance se NE poziva ovde — poziva se iz tryStartFight
         // tek kada je currentUser sigurno učitan
+
     }
 
     /**
@@ -305,7 +307,7 @@ public class BossFightActivity extends AppCompatActivity implements SensorEventL
         }
 
 
-
+        progressPlayerPP.setProgress(playerPP);
 
     }
 

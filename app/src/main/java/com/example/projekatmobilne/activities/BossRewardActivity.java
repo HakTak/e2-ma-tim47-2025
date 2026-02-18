@@ -7,6 +7,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -31,6 +32,7 @@ public class BossRewardActivity extends AppCompatActivity implements SensorEvent
     // Shake parametri
     private static final float SHAKE_THRESHOLD = 12f;
     private static final int   SHAKE_WAIT_MS   = 1000;
+    private MediaPlayer mediaPlayer;
 
     // Views
     private ImageView    ivChest;
@@ -180,6 +182,12 @@ public class BossRewardActivity extends AppCompatActivity implements SensorEvent
         Log.d(TAG, "Otvaranje kovčega!");
         tvRewardTitle.setText("🎉 Nagrade!");
 
+        // ← DODAJ OVO
+        mediaPlayer = MediaPlayer.create(this, R.raw.open);
+        if (mediaPlayer != null) {
+            mediaPlayer.start();
+        }
+
         // Postavi animaciju i pokreni
         ivChest.setImageResource(R.drawable.chest_animation);
         AnimationDrawable animation = (AnimationDrawable) ivChest.getDrawable();
@@ -210,4 +218,14 @@ public class BossRewardActivity extends AppCompatActivity implements SensorEvent
         Log.d(TAG, "Nagrade prikazane | Coins: " + coinsEarned
                 + " | Oprema: " + (hasEquipment ? equipmentEmoji : "nema"));
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
 }

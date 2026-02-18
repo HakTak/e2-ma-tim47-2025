@@ -80,6 +80,19 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+       <!-- PP TRAKA -->
+        <ProgressBar
+            android:id="@+id/progressPlayerPP"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="260dp"
+            android:layout_height="12dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="6dp"
+            android:max="300"
+            android:progress="100"
+            android:progressTint="#4A90D9"
+            android:progressBackgroundTint="#444444" />
+
         <!-- ŠANSA POGOTKA -->
         <TextView
             android:id="@+id/tvHitChance"
