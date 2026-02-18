@@ -177,6 +177,14 @@ public class CategoryViewModel extends AndroidViewModel {
         });
     }
 
+    public String validateColorUnique(String colorHex) {
+        List<Category> current = categoriesLiveData.getValue();
+        if (current != null && !categoryService.isColorAvailable(colorHex, null, current)) {
+            return "Ova boja je već zauzeta drugom kategorijom. Izaberite drugu boju.";
+        }
+        return null;
+    }
+
     // ===================================================
     // CALLBACK
     // ===================================================

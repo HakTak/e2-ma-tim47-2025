@@ -3,6 +3,10 @@ package com.example.projekatmobilne.activities;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -39,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class BossFightActivity extends AppCompatActivity {
+public class BossFightActivity extends AppCompatActivity implements SensorEventListener {
 
     private static final String TAG = "BOSS_FIGHT_ACTIVITY";
     private static final int BASE_MAX_ATTACKS = 5;
@@ -57,6 +61,11 @@ public class BossFightActivity extends AppCompatActivity {
     private int currentBossHp;
     private int maxAttacks = BASE_MAX_ATTACKS;
     private int attacksLeft;
+    private static final float SHAKE_THRESHOLD = 8.0f;
+    private static final long SHAKE_WAIT_MS = 1000;
+    private long lastShakeTime = 0;
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
     private int playerPP;
     private double hitChance = 0.5;
     private boolean fightFinished = false;
@@ -132,6 +141,22 @@ public class BossFightActivity extends AppCompatActivity {
         userViewModel      = new ViewModelProvider(this).get(UserViewModel.class);
         equipmentViewModel = new ViewModelProvider(this).get(EquipmentViewModel.class);
         equipmentService   = new EquipmentService();
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
     }
 
     // ===================================================
@@ -201,6 +226,31 @@ public class BossFightActivity extends AppCompatActivity {
      * Kreće loadHitChance tek kada su korisnik, boss i oprema svi učitani.
      * setupBossFight se poziva iz loadHitChance kada i šansa bude spremna.
      */
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (fightFinished) return;
+        if (event.sensor.getType() != Sensor.TYPE_ACCELEROMETER) return;
+
+        float x = event.values[0];
+        float y = event.values[1];
+        float z = event.values[2];
+
+        double acceleration = Math.sqrt(x * x + y * y + z * z) - SensorManager.GRAVITY_EARTH;
+
+        if (acceleration > SHAKE_THRESHOLD) {
+            long now = System.currentTimeMillis();
+            if (now - lastShakeTime > SHAKE_WAIT_MS) {
+                lastShakeTime = now;
+                if (btnAttack.isEnabled()) {
+                    performAttack();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
     private void tryStartFight() {
         if (userLoaded && bossLoaded && equipmentLoaded && !hitChanceLoaded) {
             Log.d(TAG, "Svi podaci učitani — računam šansu pogotka...");
