@@ -1,6 +1,8 @@
 package com.example.projekatmobilne.activities;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -23,7 +25,9 @@ import com.example.projekatmobilne.models.Task;
 import com.example.projekatmobilne.models.User;
 import com.example.projekatmobilne.repositories.TaskRepository;
 import com.example.projekatmobilne.services.EquipmentService;
+import com.example.projekatmobilne.services.TaskService;
 import com.example.projekatmobilne.utils.SharedPrefsManager;
+import com.example.projekatmobilne.utils.SpriteAnimationView;
 import com.example.projekatmobilne.viewModels.BossViewModel;
 import com.example.projekatmobilne.viewModels.EquipmentViewModel;
 import com.example.projekatmobilne.viewModels.UserViewModel;
@@ -68,6 +72,10 @@ public class BossFightActivity extends AppCompatActivity {
     private boolean userLoaded      = false;
     private boolean bossLoaded      = false;
     private boolean equipmentLoaded = false;
+    // Sprite
+    private SpriteAnimationView spriteViewBoss;
+    private Bitmap hitSheet;
+    private Bitmap dodgeSheet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +96,17 @@ public class BossFightActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Borba sa Bosom");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+
+        // ← koristi field, ne lokalna varijabla
+        spriteViewBoss = findViewById(R.id.spriteViewBoss);
+
+        Bitmap idleSheet = BitmapFactory.decodeResource(getResources(), R.drawable.idle);
+        hitSheet = BitmapFactory.decodeResource(getResources(), R.drawable.hit);   // ← field
+        dodgeSheet = BitmapFactory.decodeResource(getResources(), R.drawable.dodge); // ← field
+
+        spriteViewBoss.setScaleFactor(2.5f);
+        spriteViewBoss.setIdleSheet(idleSheet, 4);
+        spriteViewBoss.startIdleAnimation();
 
         tvBossName         = findViewById(R.id.tvBossName);
         tvBossHp           = findViewById(R.id.tvBossHp);
@@ -250,37 +269,88 @@ public class BossFightActivity extends AppCompatActivity {
         int failed = 0;
 
         for (Task task : tasks) {
-            // Prolazimo kroz occurrenceStatuses za SVE taskove
-            if (task.getOccurrenceStatuses() != null && !task.getOccurrenceStatuses().isEmpty()) {
-                for (Map.Entry<String, String> entry : task.getOccurrenceStatuses().entrySet()) {
-                    try {
-                        TaskStatus s = TaskStatus.valueOf(entry.getValue());
-                        switch (s) {
-                            case DONE:   done++;   break;
-                            case ACTIVE: active++; break;
-                            case FAILED: failed++; break;
-                            // CANCELLED, PAUSED, UPCOMING — ignorišemo
+
+            // >>> RECURRING TASK: Prolazi kroz SVE datume iz recurringDates <
+            if (task.getFrequencyType() == FrequencyType.RECURRING
+                    && task.getRecurringDates() != null
+                    && !task.getRecurringDates().isEmpty()) {
+
+                Log.d(TAG, "Processing RECURRING task: " + task.getTitle()
+                        + " | Broj datuma: " + task.getRecurringDates().size());
+
+                for (Long timestamp : task.getRecurringDates()) {
+                    String dateKey = TaskService.timestampToDateKey(timestamp);
+
+                    // Proveri da li ima status u occurrenceStatuses mapi
+                    TaskStatus status;
+                    if (task.getOccurrenceStatuses() != null
+                            && task.getOccurrenceStatuses().containsKey(dateKey)) {
+                        try {
+                            status = TaskStatus.valueOf(task.getOccurrenceStatuses().get(dateKey));
+                        } catch (Exception e) {
+                            Log.e(TAG, "Greška parsiranja statusa za " + dateKey + ": " + e.getMessage());
+                            status = TaskStatus.ACTIVE; // fallback
                         }
-                        Log.d(TAG, "Task: " + task.getTitle()
-                                + " | datum: " + entry.getKey()
-                                + " | status: " + s
-                                + " | broji se: " + (s == TaskStatus.DONE || s == TaskStatus.ACTIVE || s == TaskStatus.FAILED));
-                    } catch (Exception e) {
-                        Log.e(TAG, "Greška parsiranja statusa: " + entry.getValue());
+                    } else {
+                        // Nema unosa u mapi → ACTIVE po defaultu
+                        status = TaskStatus.ACTIVE;
+                    }
+
+                    // Broji samo DONE, ACTIVE, FAILED
+                    switch (status) {
+                        case DONE:
+                            done++;
+                            Log.d(TAG, "  ✅ " + dateKey + " → DONE");
+                            break;
+                        case ACTIVE:
+                            active++;
+                            Log.d(TAG, "  ⭕ " + dateKey + " → ACTIVE");
+                            break;
+                        case FAILED:
+                            failed++;
+                            Log.d(TAG, "  ❌ " + dateKey + " → FAILED");
+                            break;
+                        default:
+                            Log.d(TAG, "  ⏸️ " + dateKey + " → " + status + " (ne broji se)");
+                            break;
                     }
                 }
-            } else {
-                // Taskovi koji nemaju occurrenceStatuses — koristimo task.getStatus()
-                TaskStatus s = task.getStatus();
-                if (s == null) continue;
-                switch (s) {
-                    case DONE:   done++;   break;
-                    case ACTIVE: active++; break;
-                    case FAILED: failed++; break;
+
+            }
+            // >>> ONE_TIME TASK: STARA LOGIKA SA occurrenceStatuses <
+            else {
+                // Taskovi koji imaju occurrenceStatuses — koristimo ih
+                if (task.getOccurrenceStatuses() != null && !task.getOccurrenceStatuses().isEmpty()) {
+                    for (Map.Entry<String, String> entry : task.getOccurrenceStatuses().entrySet()) {
+                        try {
+                            TaskStatus s = TaskStatus.valueOf(entry.getValue());
+                            switch (s) {
+                                case DONE:   done++;   break;
+                                case ACTIVE: active++; break;
+                                case FAILED: failed++; break;
+                                // CANCELLED, PAUSED, UPCOMING — ignorišemo
+                            }
+                            Log.d(TAG, "Task (ONE_TIME): " + task.getTitle()
+                                    + " | datum: " + entry.getKey()
+                                    + " | status: " + s
+                                    + " | broji se: " + (s == TaskStatus.DONE || s == TaskStatus.ACTIVE || s == TaskStatus.FAILED));
+                        } catch (Exception e) {
+                            Log.e(TAG, "Greška parsiranja statusa: " + entry.getValue());
+                        }
+                    }
+                } else {
+                    // Taskovi koji nemaju occurrenceStatuses — koristimo task.getStatus()
+                    TaskStatus s = task.getStatus();
+                    if (s == null) continue;
+                    switch (s) {
+                        case DONE:   done++;   break;
+                        case ACTIVE: active++; break;
+                        case FAILED: failed++; break;
+                    }
+                    Log.d(TAG, "Task (ONE_TIME, no occurrences): " + task.getTitle()
+                            + " | status: " + s
+                            + " | broji se: " + (s == TaskStatus.DONE || s == TaskStatus.ACTIVE || s == TaskStatus.FAILED));
                 }
-                Log.d(TAG, "Task (no occurrences): " + task.getTitle()
-                        + " | status: " + s
-                        + " | broji se: " + (s == TaskStatus.DONE || s == TaskStatus.ACTIVE || s == TaskStatus.FAILED));
             }
         }
 
@@ -307,6 +377,7 @@ public class BossFightActivity extends AppCompatActivity {
 
     private void performAttack() {
         if (attacksLeft <= 0 || fightFinished) return;
+        btnAttack.setEnabled(false);
 
         attacksLeft--;
         boolean hit = new Random().nextDouble() < hitChance;
@@ -314,19 +385,32 @@ public class BossFightActivity extends AppCompatActivity {
         if (hit) {
             currentBossHp -= playerPP;
             if (currentBossHp < 0) currentBossHp = 0;
-            addToBattleLog("⚔ Pogodak! Naneo si " + playerPP
-                    + " štete. Boss HP: " + currentBossHp);
+            addToBattleLog("⚔ Pogodak! Naneo si " + playerPP + " štete. Boss HP: " + currentBossHp);
+
+            spriteViewBoss.playOneShotAnimation(hitSheet, 4, () -> {
+                updateHpDisplay();
+                updateAttacksDisplay();
+                if (currentBossHp <= 0) {
+                    endFight(true);
+                } else if (attacksLeft <= 0) {
+                    endFight(false);
+                } else {
+                    btnAttack.setEnabled(true);
+                }
+            });
+
         } else {
             addToBattleLog("💨 Promašaj! Boss se izmaknuo.");
-        }
 
-        updateHpDisplay();
-        updateAttacksDisplay();
-
-        if (currentBossHp <= 0) {
-            endFight(true);
-        } else if (attacksLeft <= 0) {
-            endFight(false);
+            spriteViewBoss.playOneShotAnimation(dodgeSheet, 8, () -> { // ← 8 frejmova za dodge
+                updateHpDisplay();
+                updateAttacksDisplay();
+                if (attacksLeft <= 0) {
+                    endFight(false);
+                } else {
+                    btnAttack.setEnabled(true);
+                }
+            });
         }
     }
 
