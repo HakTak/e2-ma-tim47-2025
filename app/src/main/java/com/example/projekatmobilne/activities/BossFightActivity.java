@@ -241,80 +241,61 @@ public class BossFightActivity extends AppCompatActivity {
 
     private double calculateBaseHitChance(List<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) {
-            Log.d(TAG, "Nema zadataka — default šansa 50%");
-            return 0.5;
+            Log.d(TAG, "Nema zadataka — default šansa 20%");
+            return 0.2;
         }
 
-        if (currentUser == null) {
-            Log.d(TAG, "Korisnik nije učitan — default šansa 50%");
-            return 0.5;
-        }
-
-        // Odredi vremenski opseg etape
-        List<Long> timestamps = currentUser.getLevelUpTimestamps();
-        int currentLevel = currentUser.getLevel();
-
-        long etapaStart;
-        long etapaEnd = System.currentTimeMillis();
-
-        if (timestamps == null || timestamps.isEmpty()) {
-            etapaStart = 0;
-            Log.d(TAG, "Nema level-up timestamps — koristim sve zadatke");
-        } else if (currentLevel <= 1 || timestamps.size() < 2) {
-            etapaStart = 0;
-            etapaEnd   = timestamps.get(timestamps.size() - 1);
-            Log.d(TAG, "Prva etapa: od početka do " + etapaEnd);
-        } else {
-            etapaStart = timestamps.get(timestamps.size() - 2);
-            etapaEnd   = timestamps.get(timestamps.size() - 1);
-            Log.d(TAG, "Etapa: " + etapaStart + " → " + etapaEnd);
-        }
-
-        int done = 0, failed = 0, total = 0;
+        int done   = 0;
+        int active = 0;
+        int failed = 0;
 
         for (Task task : tasks) {
-            if (task.getOccurrenceStatuses() == null || task.getOccurrenceStatuses().isEmpty()) continue;
-
-            for (Map.Entry<String, String> entry : task.getOccurrenceStatuses().entrySet()) {
-                // Konvertuj datum ključ (npr. "2026-02-18") u timestamp
-                long dateTimestamp;
-                try {
-                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
-                    dateTimestamp = sdf.parse(entry.getKey()).getTime();
-                } catch (Exception e) {
-                    Log.e(TAG, "Greška parsiranja datuma: " + entry.getKey());
-                    continue;
-                }
-
-                // Provjeri da li datum pada u etapu
-                if (dateTimestamp < etapaStart || dateTimestamp > etapaEnd) continue;
-
-                try {
-                    TaskStatus s = TaskStatus.valueOf(entry.getValue());
-                    Log.d(TAG, "Task: " + task.getTitle() + " | datum: " + entry.getKey() + " | status: " + s);
-                    if (s == TaskStatus.DONE) {
-                        done++;
-                        total++;
-                    } else if (s == TaskStatus.FAILED) {
-                        failed++;
-                        total++;
+            // Prolazimo kroz occurrenceStatuses za SVE taskove
+            if (task.getOccurrenceStatuses() != null && !task.getOccurrenceStatuses().isEmpty()) {
+                for (Map.Entry<String, String> entry : task.getOccurrenceStatuses().entrySet()) {
+                    try {
+                        TaskStatus s = TaskStatus.valueOf(entry.getValue());
+                        switch (s) {
+                            case DONE:   done++;   break;
+                            case ACTIVE: active++; break;
+                            case FAILED: failed++; break;
+                            // CANCELLED, PAUSED, UPCOMING — ignorišemo
+                        }
+                        Log.d(TAG, "Task: " + task.getTitle()
+                                + " | datum: " + entry.getKey()
+                                + " | status: " + s
+                                + " | broji se: " + (s == TaskStatus.DONE || s == TaskStatus.ACTIVE || s == TaskStatus.FAILED));
+                    } catch (Exception e) {
+                        Log.e(TAG, "Greška parsiranja statusa: " + entry.getValue());
                     }
-                    // ACTIVE, PAUSED, CANCELLED, UPCOMING se ignorišu
-                } catch (Exception e) {
-                    Log.e(TAG, "Greška parsiranja statusa: " + entry.getValue());
                 }
+            } else {
+                // Taskovi koji nemaju occurrenceStatuses — koristimo task.getStatus()
+                TaskStatus s = task.getStatus();
+                if (s == null) continue;
+                switch (s) {
+                    case DONE:   done++;   break;
+                    case ACTIVE: active++; break;
+                    case FAILED: failed++; break;
+                }
+                Log.d(TAG, "Task (no occurrences): " + task.getTitle()
+                        + " | status: " + s
+                        + " | broji se: " + (s == TaskStatus.DONE || s == TaskStatus.ACTIVE || s == TaskStatus.FAILED));
             }
         }
 
+        int total = done + active + failed;
+
+        Log.d(TAG, "=== ŠANSA POGOTKA ===");
+        Log.d(TAG, "DONE: " + done + " | ACTIVE: " + active + " | FAILED: " + failed);
+        Log.d(TAG, "Ukupno (DONE+ACTIVE+FAILED): " + total);
+
         if (total == 0) {
-            Log.d(TAG, "Nema zadataka u etapi — default šansa 50%");
+            Log.d(TAG, "Nema relevantnih zadataka — default šansa 50%");
             return 0.5;
         }
 
         double chance = (double) done / total;
-        Log.d(TAG, "=== ŠANSA POGOTKA ===");
-        Log.d(TAG, "Etapa: " + etapaStart + " → " + etapaEnd);
-        Log.d(TAG, "Urađeno: " + done + " | Neuspešno: " + failed + " | Ukupno: " + total);
         Log.d(TAG, "Šansa: " + done + "/" + total + " = " + (int)(chance * 100) + "%");
 
         return chance;
