@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- BOSS VIZUELNI PRIKAZ (privremeni kvadrat) -->
+        <View
+            android:id="@+id/viewBossPlaceholder"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:background="#e94560" />
+
+        <!-- BOSS NAZIV -->
+        <TextView
+            android:id="@+id/tvBossName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="BOSS"
+            android:textColor="#e94560"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- BOSS HP LABEL -->
+        <TextView
+            android:id="@+id/tvBossHpLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="HP Bossa"
+            android:textColor="#ffffff"
+            android:textSize="14sp" />
+
+        <!-- BOSS HP PROGRESS BAR -->
+        <ProgressBar
+            android:id="@+id/progressBossHp"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_marginTop="4dp"
+            android:max="100"
+            android:progress="100"
+            android:progressTint="#e94560"
+            android:progressBackgroundTint="#444444" />
+
+        <!-- BOSS HP VREDNOST -->
+        <TextView
+            android:id="@+id/tvBossHp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="#e94560"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- DIVIDER -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="#444444" />
+
+        <!-- KORISNIKOV PP -->
+        <TextView
+            android:id="@+id/tvPlayerPP"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#f5a623"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- ŠANSA POGOTKA -->
+        <TextView
+            android:id="@+id/tvHitChance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="#aaaaaa"
+            android:textSize="14sp" />
+
+        <!-- PREOSTALI NAPADI -->
+        <TextView
+            android:id="@+id/tvAttacksLeft"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="#ffffff"
+            android:textSize="16sp" />
+
+        <!-- AKTIVNA OPREMA -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Aktivna oprema:"
+            android:textColor="#aaaaaa"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvActiveEquipment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="#ffffff"
+            android:textSize="20sp" />
+
+        <!-- POTENCIJALNE NAGRADE -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Potencijalne nagrade:"
+            android:textColor="#aaaaaa"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvPotentialRewards"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="#f5a623"
+            android:textSize="15sp" />
+
+        <!-- BATTLE LOG -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Tok borbe:"
+            android:textColor="#aaaaaa"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvBattleLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="#16213e"
+            android:minHeight="80dp"
+            android:padding="8dp"
+            android:textColor="#cccccc"
+            android:textSize="13sp" />
+
+        <!-- DUGME ZA NAPAD -->
+        <Button
+            android:id="@+id/btnAttack"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#e94560"
+            android:text="⚔ NAPADNI"
+            android:textColor="#ffffff"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</ScrollView>
