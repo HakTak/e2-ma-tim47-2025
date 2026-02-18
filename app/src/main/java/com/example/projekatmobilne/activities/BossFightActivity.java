@@ -422,8 +422,17 @@ public class BossFightActivity extends AppCompatActivity {
         fightFinished = true;
         btnAttack.setEnabled(false);
 
+        Log.d(TAG, "endFight: JEL SAM POZVAN");
+
         if (bossDefeated) {
-            handleVictory();
+            Log.d(TAG, "endFight: USAO U IF");
+            Bitmap deadSheet = BitmapFactory.decodeResource(getResources(), R.drawable.death);
+            spriteViewBoss.playFinalAnimation(deadSheet, 4, () -> {
+                spriteViewBoss.postDelayed(() -> {
+                    Log.d(TAG, "endFight: Treba se pozvati pobeda");
+                    handleVictory();
+                }, 1000);
+            });
         } else {
             boolean halfDefeated = currentBossHp <= (currentBoss.getMaxHp() / 2);
             handleDefeat(halfDefeated);

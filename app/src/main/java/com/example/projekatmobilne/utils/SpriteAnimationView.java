@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
 
+import android.util.Log;
 import android.view.View;
 
 public class SpriteAnimationView extends View {
@@ -24,7 +25,7 @@ public class SpriteAnimationView extends View {
     private int frameHeight;
     private Paint paint;
     private Handler handler = new Handler(Looper.getMainLooper());
-    private int frameDurationMs = 150;
+    private int frameDurationMs = 200;
     private boolean isAnimating = false;
     private boolean isPendingFrame = false;
     private float scaleFactor = 1.5f;
@@ -37,6 +38,7 @@ public class SpriteAnimationView extends View {
     public SpriteAnimationView(Context context, AttributeSet attrs) {
         super(context, attrs);
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        setLayerType(LAYER_TYPE_SOFTWARE, null);
     }
 
     public void setScaleFactor(float scale) {
@@ -87,12 +89,10 @@ public class SpriteAnimationView extends View {
         invalidate();
 
         if (currentFrame >= totalFrames - 1) {
-            // Animacija gotova, vrati se na idle
             handler.postDelayed(() -> {
-                currentFrame = 0;
-                if (callback != null) callback.onAnimationFinished();
                 stopAnimation();
-                startIdleAnimation();
+                startIdleAnimation(); // ← prvo vrati idle
+                if (callback != null) callback.onAnimationFinished(); // ← callback može ga pregaziti
             }, frameDurationMs);
             return;
         }
@@ -102,6 +102,45 @@ public class SpriteAnimationView extends View {
             runOneShotFrame(totalFrames, callback);
         }, frameDurationMs);
     }
+
+    // One-shot BEZ povratka na idle (za death animaciju)
+    private Handler finalAnimHandler = new Handler(Looper.getMainLooper());
+
+    public void playFinalAnimation(Bitmap sheet, int frames, AnimationCallback callback) {
+        // Zaustavi SVE - i idle i bilo sta drugo
+        isAnimating = false;
+        isPendingFrame = false;
+        handler.removeCallbacksAndMessages(null);
+        finalAnimHandler.removeCallbacksAndMessages(null);
+
+        currentSheet = sheet;
+        frameCount = frames;
+        frameWidth = sheet.getWidth() / frames;
+        frameHeight = sheet.getHeight();
+        currentFrame = 0;
+
+        runFinalFrame(frames, callback);
+    }
+
+    private void runFinalFrame(int totalFrames, AnimationCallback callback) {
+        Log.d("SPRITE", "runFinalFrame: currentFrame=" + currentFrame + "/" + (totalFrames-1));
+
+        invalidate(); // crta TRENUTNI frejm
+
+        if (currentFrame >= totalFrames - 1) {
+            Log.d("SPRITE", "Animacija gotova, pozivam callback");
+            finalAnimHandler.postDelayed(() -> {
+                if (callback != null) callback.onAnimationFinished();
+            }, 1000);
+            return;
+        }
+
+        finalAnimHandler.postDelayed(() -> {
+            currentFrame++;
+            runFinalFrame(totalFrames, callback);
+        }, frameDurationMs);
+    }
+
 
     public void stopAnimation() {
         isAnimating = false;
@@ -125,6 +164,8 @@ public class SpriteAnimationView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (currentSheet == null) return;
+
+        Log.d("SPRITE_DRAW", "onDraw: frame=" + currentFrame + " frameWidth=" + frameWidth + " sheetWidth=" + currentSheet.getWidth());
 
         Rect src = new Rect(
                 currentFrame * frameWidth, 0,
