@@ -44,6 +44,7 @@
             android:label="@string/new_task"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".activities.BossFightActivity" />
+        <activity android:name=".activities.BossRewardActivity" />
     </application>
 
 </manifest>

@@ -1,5 +1,6 @@
 package com.example.projekatmobilne.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -374,10 +375,8 @@ public class BossFightActivity extends AppCompatActivity {
 
         String userId = prefsManager.getUserId();
 
-        // 1. Dodeli coins korisniku
         userViewModel.addCoins(userId, coinsEarned);
 
-        // 2. Označi bossa kao poraženog
         bossViewModel.markBossDefeated(currentBoss, new BossViewModel.UpdateDoneCallback() {
             @Override
             public void onSuccess() {
@@ -389,27 +388,24 @@ public class BossFightActivity extends AppCompatActivity {
             }
         });
 
-        // 3. Šansa za opremu (20%)
         equipmentService.grantBossLootEquipment(currentUser, activeEquipment,
                 new EquipmentService.LootCallback() {
                     @Override
                     public void onLoot(EquipmentSubtype received, boolean wasUpgrade) {
-                        String lootMsg = wasUpgrade
-                                ? "🗡 Oružje unapređeno: " + received.name()
-                                : "🎁 Nova oprema: " + received.name();
-                        addToBattleLog(lootMsg);
                         Log.d(TAG, "Loot dobijen: " + received.name());
                         finalizeFight(userId);
+                        launchRewardScreen(coinsEarned, true, getEquipmentEmoji(received));
                     }
                     @Override
                     public void onNoLoot() {
-                        addToBattleLog("🎲 Nisi dobio opremu ovog puta.");
                         finalizeFight(userId);
+                        launchRewardScreen(coinsEarned, false, null);
                     }
                     @Override
                     public void onError(String error) {
                         Log.e(TAG, "Greška pri loot-u: " + error);
                         finalizeFight(userId);
+                        launchRewardScreen(coinsEarned, false, null);
                     }
                 });
     }
@@ -429,22 +425,38 @@ public class BossFightActivity extends AppCompatActivity {
                         new EquipmentService.LootCallback() {
                             @Override
                             public void onLoot(EquipmentSubtype received, boolean wasUpgrade) {
-                                addToBattleLog("🎁 Ipak si dobio opremu: " + received.name());
                                 finalizeFight(userId);
+                                launchRewardScreen(halfCoins, true, getEquipmentEmoji(received));
                             }
                             @Override
-                            public void onNoLoot() { finalizeFight(userId); }
+                            public void onNoLoot() {
+                                finalizeFight(userId);
+                                launchRewardScreen(halfCoins, false, null);
+                            }
                             @Override
-                            public void onError(String error) { finalizeFight(userId); }
+                            public void onError(String error) {
+                                finalizeFight(userId);
+                                launchRewardScreen(halfCoins, false, null);
+                            }
                         });
             } else {
                 finalizeFight(userId);
+                launchRewardScreen(halfCoins, false, null);
             }
         } else {
             addToBattleLog("💀 PORAZ! Nisi uspio umanjiti 50% HP bossa.");
             addToBattleLog("💰 Osvojeno: 0 coins");
             finalizeFight(userId);
+            // Kod poraza nema kovčega — samo finish
+            new android.os.Handler().postDelayed(this::finish, 2000);
         }
+    }
+
+    private void launchRewardScreen(int coins, boolean hasEquipment, String equipmentEmoji) {
+        Intent intent = BossRewardActivity.createIntent(
+                this, coins, hasEquipment, equipmentEmoji);
+        startActivity(intent);
+        finish();
     }
 
     private void finalizeFight(String userId) {
@@ -508,5 +520,20 @@ public class BossFightActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private String getEquipmentEmoji(EquipmentSubtype subtype) {
+        switch (subtype) {
+            case POTION_20:      return "🧪";
+            case POTION_40:      return "⚗️";
+            case POTION_PERM_5:  return "💧";
+            case POTION_PERM_10: return "💦";
+            case GLOVES:         return "🧤";
+            case SHIELD:         return "🛡️";
+            case BOOTS:          return "👢";
+            case SWORD:          return "⚔️";
+            case BOW:            return "🏹";
+            default:             return "🎁";
+        }
     }
 }
