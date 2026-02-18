@@ -29,6 +29,7 @@ import com.example.projekatmobilne.viewModels.UserViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class BossFightActivity extends AppCompatActivity {
@@ -52,6 +53,7 @@ public class BossFightActivity extends AppCompatActivity {
     private int playerPP;
     private double hitChance = 0.5;
     private boolean fightFinished = false;
+    private boolean hitChanceLoaded = false; // NOVO
     private StringBuilder battleLog = new StringBuilder();
 
     // ViewModels i servisi
@@ -102,11 +104,11 @@ public class BossFightActivity extends AppCompatActivity {
     }
 
     private void initServices() {
-        prefsManager      = new SharedPrefsManager(this);
-        bossViewModel     = new ViewModelProvider(this).get(BossViewModel.class);
-        userViewModel     = new ViewModelProvider(this).get(UserViewModel.class);
-        equipmentViewModel= new ViewModelProvider(this).get(EquipmentViewModel.class);
-        equipmentService  = new EquipmentService();
+        prefsManager       = new SharedPrefsManager(this);
+        bossViewModel      = new ViewModelProvider(this).get(BossViewModel.class);
+        userViewModel      = new ViewModelProvider(this).get(UserViewModel.class);
+        equipmentViewModel = new ViewModelProvider(this).get(EquipmentViewModel.class);
+        equipmentService   = new EquipmentService();
     }
 
     // ===================================================
@@ -152,7 +154,6 @@ public class BossFightActivity extends AppCompatActivity {
         equipmentViewModel.loadEquipment(userId);
         equipmentViewModel.equipmentList.observe(this, equipmentList -> {
             if (equipmentList != null && !equipmentLoaded) {
-                // Filtriramo samo aktivnu opremu
                 activeEquipment.clear();
                 for (Equipment e : equipmentList) {
                     if (e.isActive()) activeEquipment.add(e);
@@ -163,16 +164,18 @@ public class BossFightActivity extends AppCompatActivity {
             }
         });
 
-        // 4. Učitaj zadatke za šansu pogotka
-        loadHitChance(userId);
+        // NAPOMENA: loadHitChance se NE poziva ovde — poziva se iz tryStartFight
+        // tek kada je currentUser sigurno učitan
     }
 
     /**
-     * Kreće borbu tek kada su korisnik, boss i oprema svi učitani.
+     * Kreće loadHitChance tek kada su korisnik, boss i oprema svi učitani.
+     * setupBossFight se poziva iz loadHitChance kada i šansa bude spremna.
      */
     private void tryStartFight() {
-        if (userLoaded && bossLoaded && equipmentLoaded) {
-            setupBossFight();
+        if (userLoaded && bossLoaded && equipmentLoaded && !hitChanceLoaded) {
+            Log.d(TAG, "Svi podaci učitani — računam šansu pogotka...");
+            loadHitChance(prefsManager.getUserId());
         }
     }
 
@@ -204,6 +207,11 @@ public class BossFightActivity extends AppCompatActivity {
     // ŠANSA POGOTKA
     // ===================================================
 
+    /**
+     * Učitava zadatke i računa šansu pogotka.
+     * Poziva se SAMO iz tryStartFight — kada je currentUser sigurno učitan.
+     * Na kraju poziva setupBossFight.
+     */
     private void loadHitChance(String userId) {
         TaskRepository taskRepository = new TaskRepository();
         taskRepository.getAllTasks(userId, new TaskRepository.TasksCallback() {
@@ -213,52 +221,101 @@ public class BossFightActivity extends AppCompatActivity {
                 // Shield dodaje bonus na šansu
                 hitChance = equipmentService.calculateAttackChance(
                         baseChance * 100, activeEquipment) / 100.0;
+                Log.d(TAG, "Šansa pogotka konačna (sa opremom): " + (int)(hitChance * 100) + "%");
                 tvHitChance.setText("Šansa pogotka: " + (int)(hitChance * 100) + "%");
-                Log.d(TAG, "Šansa pogotka (sa opremom): " + (int)(hitChance * 100) + "%");
+                hitChanceLoaded = true;
+                setupBossFight();
             }
 
             @Override
             public void onError(String error) {
                 hitChance = 0.5;
                 tvHitChance.setText("Šansa pogotka: 50% (default)");
-                Log.e(TAG, "Greška pri učitavanju zadataka: " + error);
+                Log.e(TAG, "Greška pri učitavanju zadataka — default 50%: " + error);
+                hitChanceLoaded = true;
+                setupBossFight();
             }
         });
     }
 
     private double calculateBaseHitChance(List<Task> tasks) {
-        if (tasks == null || tasks.isEmpty()) return 0.5;
+        if (tasks == null || tasks.isEmpty()) {
+            Log.d(TAG, "Nema zadataka — default šansa 50%");
+            return 0.5;
+        }
 
-        int done = 0, failed = 0, cancelled = 0;
+        if (currentUser == null) {
+            Log.d(TAG, "Korisnik nije učitan — default šansa 50%");
+            return 0.5;
+        }
+
+        // Odredi vremenski opseg etape
+        List<Long> timestamps = currentUser.getLevelUpTimestamps();
+        int currentLevel = currentUser.getLevel();
+
+        long etapaStart;
+        long etapaEnd = System.currentTimeMillis();
+
+        if (timestamps == null || timestamps.isEmpty()) {
+            etapaStart = 0;
+            Log.d(TAG, "Nema level-up timestamps — koristim sve zadatke");
+        } else if (currentLevel <= 1 || timestamps.size() < 2) {
+            etapaStart = 0;
+            etapaEnd   = timestamps.get(timestamps.size() - 1);
+            Log.d(TAG, "Prva etapa: od početka do " + etapaEnd);
+        } else {
+            etapaStart = timestamps.get(timestamps.size() - 2);
+            etapaEnd   = timestamps.get(timestamps.size() - 1);
+            Log.d(TAG, "Etapa: " + etapaStart + " → " + etapaEnd);
+        }
+
+        int done = 0, failed = 0, total = 0;
 
         for (Task task : tasks) {
-            if (task.getFrequencyType() == FrequencyType.ONE_TIME) {
-                TaskStatus s = task.getStatus();
-                if (s == TaskStatus.DONE)           done++;
-                else if (s == TaskStatus.FAILED)    failed++;
-                else if (s == TaskStatus.CANCELLED) cancelled++;
-            } else {
-                if (task.getOccurrenceStatuses() != null) {
-                    for (String statusStr : task.getOccurrenceStatuses().values()) {
-                        try {
-                            TaskStatus s = TaskStatus.valueOf(statusStr);
-                            if (s == TaskStatus.DONE)           done++;
-                            else if (s == TaskStatus.FAILED)    failed++;
-                            else if (s == TaskStatus.CANCELLED) cancelled++;
-                        } catch (Exception e) {
-                            Log.e(TAG, "Greška parsiranja statusa: " + statusStr);
-                        }
+            if (task.getOccurrenceStatuses() == null || task.getOccurrenceStatuses().isEmpty()) continue;
+
+            for (Map.Entry<String, String> entry : task.getOccurrenceStatuses().entrySet()) {
+                // Konvertuj datum ključ (npr. "2026-02-18") u timestamp
+                long dateTimestamp;
+                try {
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                    dateTimestamp = sdf.parse(entry.getKey()).getTime();
+                } catch (Exception e) {
+                    Log.e(TAG, "Greška parsiranja datuma: " + entry.getKey());
+                    continue;
+                }
+
+                // Provjeri da li datum pada u etapu
+                if (dateTimestamp < etapaStart || dateTimestamp > etapaEnd) continue;
+
+                try {
+                    TaskStatus s = TaskStatus.valueOf(entry.getValue());
+                    Log.d(TAG, "Task: " + task.getTitle() + " | datum: " + entry.getKey() + " | status: " + s);
+                    if (s == TaskStatus.DONE) {
+                        done++;
+                        total++;
+                    } else if (s == TaskStatus.FAILED) {
+                        failed++;
+                        total++;
                     }
+                    // ACTIVE, PAUSED, CANCELLED, UPCOMING se ignorišu
+                } catch (Exception e) {
+                    Log.e(TAG, "Greška parsiranja statusa: " + entry.getValue());
                 }
             }
         }
 
-        int total = done + failed + cancelled;
-        if (total == 0) return 0.5;
+        if (total == 0) {
+            Log.d(TAG, "Nema zadataka u etapi — default šansa 50%");
+            return 0.5;
+        }
 
         double chance = (double) done / total;
-        Log.d(TAG, "Uspešnost zadataka: " + done + "/" + total
-                + " = " + (int)(chance * 100) + "%");
+        Log.d(TAG, "=== ŠANSA POGOTKA ===");
+        Log.d(TAG, "Etapa: " + etapaStart + " → " + etapaEnd);
+        Log.d(TAG, "Urađeno: " + done + " | Neuspešno: " + failed + " | Ukupno: " + total);
+        Log.d(TAG, "Šansa: " + done + "/" + total + " = " + (int)(chance * 100) + "%");
+
         return chance;
     }
 
@@ -308,7 +365,6 @@ public class BossFightActivity extends AppCompatActivity {
     }
 
     private void handleVictory() {
-        // Coins sa luk multiplikatorom
         double coinMultiplier = equipmentService.calculateCoinMultiplier(activeEquipment);
         int coinsEarned = (int)(currentBoss.getCoins() * coinMultiplier);
 
@@ -333,7 +389,7 @@ public class BossFightActivity extends AppCompatActivity {
             }
         });
 
-        // 3. Šansa za opremu (20%) — koristi EquipmentService.grantBossLootEquipment
+        // 3. Šansa za opremu (20%)
         equipmentService.grantBossLootEquipment(currentUser, activeEquipment,
                 new EquipmentService.LootCallback() {
                     @Override
@@ -368,7 +424,6 @@ public class BossFightActivity extends AppCompatActivity {
             addToBattleLog("💰 Osvojeno: " + halfCoins + " coins (polovično)");
             userViewModel.addCoins(userId, halfCoins);
 
-            // Polovina šanse za opremu (10%)
             if (new Random().nextInt(100) < 10) {
                 equipmentService.grantBossLootEquipment(currentUser, activeEquipment,
                         new EquipmentService.LootCallback() {
@@ -392,9 +447,6 @@ public class BossFightActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Poziva se na kraju svake borbe — ažurira opremu (trajanje, potrošeni napici itd.)
-     */
     private void finalizeFight(String userId) {
         equipmentViewModel.onBossFightFinished(currentUser);
         Log.d(TAG, "Borba završena, oprema ažurirana");
