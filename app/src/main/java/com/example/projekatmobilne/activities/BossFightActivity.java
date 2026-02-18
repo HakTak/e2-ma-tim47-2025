@@ -642,11 +642,11 @@ public class BossFightActivity extends AppCompatActivity implements SensorEventL
                 .setTitle("⚔️ Pripremi se za borbu!")
                 .setMessage("Pre borbe možeš aktivirati opremu koja će ti pomoći.\n\nŽeliš li otvoriti stranicu sa opremom?")
                 .setPositiveButton("Opremi se!", (dialog, which) -> {
-                    // Idi na EquipmentFragment
-                    Bundle args = new Bundle();
-                    args.putBoolean(EquipmentFragment.ARG_FROM_BOSS_FIGHT, true);
-                    Navigation.findNavController(this, R.id.nav_host_fragment)
-                            .navigate(R.id.nav_equipment, args);
+                    Intent intent = new Intent(this, HomeActivity.class);
+                    intent.putExtra("navigateTo", "equipment");
+                    intent.putExtra("fromBossFight", true);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
                     finish();
                 })
                 .setNegativeButton("Idi u borbu", (dialog, which) -> {

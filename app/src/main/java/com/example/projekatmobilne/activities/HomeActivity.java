@@ -81,6 +81,8 @@ public class HomeActivity extends AppCompatActivity {
             handleDrawerItemSelected(item.getItemId());
             return true;
         });
+
+        handleNavigationIntent(getIntent());
     }
 
     private void initBackPressHandler() {
@@ -145,5 +147,23 @@ public class HomeActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNavigationIntent(intent);
+    }
+
+    private void handleNavigationIntent(Intent intent) {
+        if (intent == null) return;
+        String navigateTo = intent.getStringExtra("navigateTo");
+        if ("equipment".equals(navigateTo)) {
+            boolean fromBossFight = intent.getBooleanExtra("fromBossFight", false);
+            Bundle args = new Bundle();
+            args.putBoolean("fromBossFight", fromBossFight);
+            navController.navigate(R.id.nav_equipment, args);
+        }
     }
 }
