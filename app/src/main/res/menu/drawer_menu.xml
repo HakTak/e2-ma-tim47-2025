@@ -12,6 +12,7 @@
             android:id="@+id/nav_statistics"
             android:icon="@android:drawable/ic_menu_sort_by_size"
             android:title="@string/drawer_statistics" />
+
         <item
             android:id="@+id/nav_level_progress"
             android:icon="@android:drawable/star_big_on"
@@ -21,23 +22,32 @@
             android:id="@+id/nav_categories"
             android:icon="@android:drawable/ic_menu_agenda"
             android:title="@string/drawer_categories" />
+
         <item
             android:id="@+id/nav_tasks"
             android:icon="@android:drawable/ic_menu_agenda"
             android:title="@string/drawer_tasks" />
+
         <item
             android:id="@+id/nav_calendar"
             android:icon="@android:drawable/ic_menu_my_calendar"
             android:title="@string/drawer_calendar" />
+
         <item
             android:id="@+id/nav_shop"
             android:title="Prodavnica"
-            android:icon="@android:drawable/ic_menu_myplaces"/>
+            android:icon="@android:drawable/ic_menu_myplaces" />
 
         <item
             android:id="@+id/nav_equipment"
             android:title="Oprema"
-            android:icon="@android:drawable/ic_menu_manage"/>
+            android:icon="@android:drawable/ic_menu_manage" />
+
+        <!-- NOVO -->
+        <item
+            android:id="@+id/nav_boss_fight"
+            android:title="Borba sa Bosom"
+            android:icon="@android:drawable/ic_menu_directions" />
 
     </group>
 

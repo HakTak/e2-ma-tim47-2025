@@ -102,11 +102,12 @@ public class HomeActivity extends AppCompatActivity {
             showLogoutDialog();
 
         } else if (id == R.id.nav_tasks) {
-            // Tasks ide u poseban Activity
             startActivity(new Intent(this, TasksActivity.class));
 
+        } else if (id == R.id.nav_boss_fight) {
+            startActivity(new Intent(this, BossFightActivity.class));
+
         } else {
-            // SVE ostalo (uključujući shop i equipment) ide kroz NavController
             navController.navigate(id);
         }
 
