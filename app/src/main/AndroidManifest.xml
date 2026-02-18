@@ -2,10 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- PERMISSIONS -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.INTERNET" />
- <!--   <uses-permission android:name="android.permission.CAMERA" /> -->
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
+        android:name=".HabitRPGApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -14,6 +16,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjekatMobilne">
+
+        <receiver android:name=".utils.AllianceInvitationReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_ACCEPT_ALLIANCE"/>
+                <action android:name="ACTION_DECLINE_ALLIANCE"/>
+            </intent-filter>
+        </receiver>
+
+        <meta-data
+            android:name="onesignal_app_id"
+            android:value="6ba28894-d610-4818-ad77-48326ce71cfd" />
+
         <activity
             android:name=".activities.HomeActivity"
             android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"

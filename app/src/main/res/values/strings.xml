@@ -135,4 +135,47 @@
 
     <string name="drawer_level_progress">Napredovanje</string>
     <string name="level_progress">Napredovanje kroz nivoe</string>
+
+    <string name="friends">Prijatelji</string>
+    <string name="friend_requests">Zahtevi</string>
+    <string name="sent_requests">Poslati</string>
+    <string name="search_users">Pretraga</string>
+    <string name="search_by_username">Pretraži po username...</string>
+    <string name="scan_qr_code">Skeniraj QR kod</string>
+    <string name="add_friend">Dodaj za prijatelja</string>
+    <string name="already_friends">Već prijatelji ✓</string>
+    <string name="request_sent">Zahtev poslat...</string>
+    <string name="accept">Prihvati</string>
+    <string name="decline">Odbij</string>
+    <string name="pending">Pending...</string>
+    <string name="cancel_request">Otkaži zahtev</string>
+    <string name="view_profile">Pogledaj profil</string>
+
+    <!-- ALLIANCE -->
+    <string name="alliance">Savez</string>
+    <string name="no_alliance">Nemaš savez</string>
+    <string name="create_alliance">Kreiraj novi savez</string>
+    <string name="alliance_info">Info</string>
+    <string name="alliance_members">Članovi</string>
+    <string name="alliance_chat">Chat</string>
+    <string name="alliance_options">Opcije</string>
+    <string name="alliance_name">Naziv saveza</string>
+    <string name="alliance_leader">Vođa</string>
+    <string name="member_count">Broj članova</string>
+    <string name="created_on">Datum kreiranja</string>
+    <string name="invite_friends">Pozovi prijatelje</string>
+    <string name="leave_alliance">Napusti savez</string>
+    <string name="destroy_alliance">Uništi savez</string>
+    <string name="open_chat">Otvori Chat</string>
+    <string name="send_message">Pošalji</string>
+    <string name="type_message">Unesi poruku...</string>
+    <string name="mission_active">Aktivna misija</string>
+    <string name="cannot_leave_mission_active">Ne možeš napustiti savez dok je misija aktivna</string>
+
+    <!-- NOTIFICATIONS -->
+    <string name="notification_friend_request_title">Novi zahtev za prijateljstvo</string>
+    <string name="notification_friend_accepted_title">Zahtev prihvaćen</string>
+    <string name="notification_alliance_invite_title">Poziv u savez</string>
+    <string name="notification_member_joined_title">Novi član</string>
+    <string name="notification_new_message_title">Nova poruka</string>
 </resources>

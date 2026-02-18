@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
     app:startDestination="@id/nav_profile">
 
@@ -44,5 +45,31 @@
         android:id="@+id/nav_equipment"
         android:name="com.example.projekatmobilne.fragments.EquipmentFragment"
         android:label="Oprema" />
+
+    <fragment
+        android:id="@+id/friendsFragment"
+        android:name="com.example.projekatmobilne.fragments.FriendsFragment"
+        android:label="Prijatelji"
+        tools:layout="@layout/fragment_friends">
+
+        <action
+            android:id="@+id/action_friendsFragment_to_allianceFragment"
+            app:destination="@id/allianceFragment"/>
+
+        <action
+            android:id="@+id/action_friendsFragment_to_profileFragment"
+            app:destination="@id/nav_profile"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/allianceFragment"
+        android:name="com.example.projekatmobilne.fragments.AllianceFragment"
+        android:label="Savez"
+        tools:layout="@layout/fragment_alliance">
+
+        <argument
+            android:name="allianceId"
+            app:argType="string"/>
+    </fragment>
 
 </navigation>
