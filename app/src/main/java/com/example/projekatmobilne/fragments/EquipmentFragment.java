@@ -127,6 +127,16 @@ public class EquipmentFragment extends Fragment {
         rvEquipment.setAdapter(adapter);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        String userId = prefsManager.getUserId();
+        if (userId != null) {
+            equipmentViewModel.loadUser(userId);
+            equipmentViewModel.loadEquipment(userId);
+        }
+    }
+
     private void setupTabs() {
         tabLayout.addTab(tabLayout.newTab().setText("🧪 Napici"));
         tabLayout.addTab(tabLayout.newTab().setText("👕 Odeća"));

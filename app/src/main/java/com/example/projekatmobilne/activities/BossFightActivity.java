@@ -14,11 +14,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.enums.EquipmentSubtype;
 import com.example.projekatmobilne.enums.FrequencyType;
 import com.example.projekatmobilne.enums.TaskStatus;
+import com.example.projekatmobilne.fragments.EquipmentFragment;
 import com.example.projekatmobilne.models.Boss;
 import com.example.projekatmobilne.models.Equipment;
 import com.example.projekatmobilne.models.Task;
@@ -85,6 +87,7 @@ public class BossFightActivity extends AppCompatActivity {
         initViews();
         initServices();
         loadData();
+        showEquipmentDialog();
     }
 
     // ===================================================
@@ -581,6 +584,25 @@ public class BossFightActivity extends AppCompatActivity {
 
         int progress = (int)((double) currentBossHp / currentBoss.getMaxHp() * 100);
         progressBossHp.setProgress(progress);
+    }
+    private void showEquipmentDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("⚔️ Pripremi se za borbu!")
+                .setMessage("Pre borbe možeš aktivirati opremu koja će ti pomoći.\n\nŽeliš li otvoriti stranicu sa opremom?")
+                .setPositiveButton("Opremi se!", (dialog, which) -> {
+                    // Idi na EquipmentFragment
+                    Bundle args = new Bundle();
+                    args.putBoolean(EquipmentFragment.ARG_FROM_BOSS_FIGHT, true);
+                    Navigation.findNavController(this, R.id.nav_host_fragment)
+                            .navigate(R.id.nav_equipment, args);
+                    finish();
+                })
+                .setNegativeButton("Idi u borbu", (dialog, which) -> {
+                    // Zatvori dialog i ostani na BossFightActivity
+                    dialog.dismiss();
+                })
+                .setCancelable(false) // korisnik mora da odabere
+                .show();
     }
 
     private void updateAttacksDisplay() {
