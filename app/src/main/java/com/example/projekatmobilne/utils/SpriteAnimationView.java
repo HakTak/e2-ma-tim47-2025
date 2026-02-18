@@ -123,12 +123,12 @@ public class SpriteAnimationView extends View {
     }
 
     private void runFinalFrame(int totalFrames, AnimationCallback callback) {
-        Log.d("SPRITE", "runFinalFrame: currentFrame=" + currentFrame + "/" + (totalFrames-1));
+       // Log.d("SPRITE", "runFinalFrame: currentFrame=" + currentFrame + "/" + (totalFrames-1));
 
         invalidate(); // crta TRENUTNI frejm
 
         if (currentFrame >= totalFrames - 1) {
-            Log.d("SPRITE", "Animacija gotova, pozivam callback");
+     //       Log.d("SPRITE", "Animacija gotova, pozivam callback");
             finalAnimHandler.postDelayed(() -> {
                 if (callback != null) callback.onAnimationFinished();
             }, 1000);
@@ -165,7 +165,7 @@ public class SpriteAnimationView extends View {
         super.onDraw(canvas);
         if (currentSheet == null) return;
 
-        Log.d("SPRITE_DRAW", "onDraw: frame=" + currentFrame + " frameWidth=" + frameWidth + " sheetWidth=" + currentSheet.getWidth());
+      //  Log.d("SPRITE_DRAW", "onDraw: frame=" + currentFrame + " frameWidth=" + frameWidth + " sheetWidth=" + currentSheet.getWidth());
 
         Rect src = new Rect(
                 currentFrame * frameWidth, 0,

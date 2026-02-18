@@ -146,12 +146,18 @@ public class BossFightActivity extends AppCompatActivity {
         // 1. Učitaj korisnika
         userViewModel.loadUser(userId);
         userViewModel.userData.observe(this, user -> {
-            if (user != null && !userLoaded) {
+            if (user != null) {
                 currentUser = user;
-                playerPP    = user.getPp();
-                userLoaded  = true;
-                Log.d(TAG, "Korisnik učitan | PP: " + playerPP);
-                tryStartFight();
+                playerPP = user.getPp(); // ← uvijek osvježi PP
+
+                if (!userLoaded) {
+                    userLoaded = true;
+                    Log.d(TAG, "Korisnik učitan | PP: " + playerPP);
+                    tryStartFight();
+                } else {
+                    // PP ažuriran (npr. nakon aktivacije opreme)
+                    updateAttacksDisplay();
+                }
             }
         });
 
@@ -217,10 +223,37 @@ public class BossFightActivity extends AppCompatActivity {
         updateRewardsDisplay();
         btnAttack.setEnabled(true);
 
+        // Prvo izračunaj
+      //  playerPP = equipmentService.calculateEffectivePP(currentUser.getPp(), activeEquipment);
+// Tek onda prikaži
+        playerPP = currentUser.getPp(); // ← direktno, bez calculateEffectivePP
+
+        Log.d(TAG, "=== SETUP BOSS FIGHT ===");
+        Log.d(TAG, "currentUser.getPp() = " + currentUser.getPp());
+        Log.d(TAG, "currentUser.getBasePP() = " + currentUser.getBasePP());
+        Log.d(TAG, "Broj aktivnih opreme: " + activeEquipment.size());
+        for (Equipment e : activeEquipment) {
+            Log.d(TAG, "  Oprema: " + e.getSubtype().name()
+                    + " | isActive: " + e.isActive()
+                    + " | ppBonusApplied: " + e.getPpBonusApplied()
+                    + " | isSingleUse: " + e.isSingleUse()
+                    + " | type: " + e.getType().name());
+        }
+        // ========================
+
+        playerPP = currentUser.getPp(); // trenutno nakon fixa
+        Log.d(TAG, "playerPP koji se koristi: " + playerPP);
+
+        tvPlayerPP.setText("⚔ Tvoja snaga (PP): " + playerPP);
+
         addToBattleLog("Borba počinje! Boss ima " + currentBoss.getMaxHp() + " HP.");
         if (maxAttacks > BASE_MAX_ATTACKS) {
             addToBattleLog("🥾 Čizme su aktivne! Imaš " + maxAttacks + " napada.");
         }
+
+
+
+
     }
 
     // ===================================================
@@ -543,13 +576,17 @@ public class BossFightActivity extends AppCompatActivity {
     // ===================================================
 
     private void updateHpDisplay() {
+
         tvBossHp.setText(currentBossHp + " / " + currentBoss.getMaxHp() + " HP");
+
         int progress = (int)((double) currentBossHp / currentBoss.getMaxHp() * 100);
         progressBossHp.setProgress(progress);
     }
 
     private void updateAttacksDisplay() {
         tvAttacksLeft.setText("Preostali napadi: " + attacksLeft + " / " + maxAttacks);
+       // playerPP = equipmentService.calculateEffectivePP(currentUser.getPp(), activeEquipment);
+        playerPP = currentUser.getPp(); // ← direktno, bez calculateEffectivePP
         tvPlayerPP.setText("⚔ Tvoja snaga (PP): " + playerPP);
     }
 
@@ -572,7 +609,7 @@ public class BossFightActivity extends AppCompatActivity {
                 case POTION_40:      emojis.append("⚗️ "); break;
                 case POTION_PERM_5:  emojis.append("💧 "); break;
                 case POTION_PERM_10: emojis.append("💦 "); break;
-                case GLOVES:         emojis.append("🧤 "); break;
+                case GLOVES:         emojis.append("🥊 "); break;
                 case SHIELD:         emojis.append("🛡️ "); break;
                 case BOOTS:          emojis.append("👢 "); break;
                 case SWORD:          emojis.append("⚔️ "); break;
@@ -602,7 +639,7 @@ public class BossFightActivity extends AppCompatActivity {
             case POTION_40:      return "⚗️";
             case POTION_PERM_5:  return "💧";
             case POTION_PERM_10: return "💦";
-            case GLOVES:         return "🧤";
+            case GLOVES:         return "🥊";
             case SHIELD:         return "🛡️";
             case BOOTS:          return "👢";
             case SWORD:          return "⚔️";
