@@ -7,14 +7,21 @@ android {
     namespace 'com.example.projekatmobilne'
     compileSdk 36
 
+    def localProperties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withInputStream { localProperties.load(it) }
+    }
+
     defaultConfig {
         applicationId "com.example.projekatmobilne"
         minSdk 30
         targetSdk 36
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "ONESIGNAL_REST_API_KEY", "\"${localProperties.getProperty('ONESIGNAL_REST_API_KEY', '')}\""
+
     }
 
     buildTypes {
@@ -23,12 +30,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
@@ -40,7 +50,7 @@ dependencies {
     implementation libs.navigation.fragment
     implementation libs.navigation.ui
 
-    // Kalendar - modernija verzija za AndroidX
+    // Kalendar
     implementation 'com.github.prolificinteractive:material-calendarview:2.0.1'
 
     testImplementation libs.junit
@@ -62,7 +72,13 @@ dependencies {
 
     // ============ CHARTS ============
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    // ============ Kalendar momenat ============
+
+    // ============ Kalendar moment ============
     implementation 'com.jakewharton.threetenabp:threetenabp:1.4.4'
+
+    // ============ ONESIGNAL (Notifikacije) ============
+    implementation 'com.onesignal:OneSignal:[5.0.0, 5.99.99]'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
+
 apply plugin: 'com.google.gms.google-services'

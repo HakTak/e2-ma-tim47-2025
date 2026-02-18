@@ -16,6 +16,7 @@ public class User {
     private int basePP; // NOVO - permanentni PP bez privremenih bonusa
     private int xp;
     private int coins;
+    private String oneSignalPlayerId;
 
     // Statistika
     private int activeDays;
@@ -44,7 +45,8 @@ public class User {
         this.longestStreak = 0;
         this.currentStreak = 0;
         this.lastActivityDate = 0;
-        this.basePP = 0; // NOVO
+        this.basePP = 0;
+        this.oneSignalPlayerId = null;
     }
 
     // Konstruktor za kreiranje novog usera
@@ -63,6 +65,7 @@ public class User {
         this.equipment = new ArrayList<>();
         this.xpHistory = new HashMap<>();
         this.createdAt = System.currentTimeMillis();
+        this.oneSignalPlayerId = null;
 
         this.activeDays = 0;
         this.tasksCreated = 0;
@@ -86,6 +89,7 @@ public class User {
         map.put("basePP", basePP); // NOVO
         map.put("xp", xp);
         map.put("coins", coins);
+        map.put("oneSignalPlayerId", oneSignalPlayerId);
         map.put("badges", badges);
         map.put("equipment", equipment);
         map.put("createdAt", createdAt);
@@ -166,5 +170,12 @@ public class User {
     }
     public void setXpHistory(Map<String, Integer> xpHistory) {
         this.xpHistory = xpHistory;
+    }
+    public String getOneSignalPlayerId() {
+        return oneSignalPlayerId;
+    }
+
+    public void setOneSignalPlayerId(String oneSignalPlayerId) {
+        this.oneSignalPlayerId = oneSignalPlayerId;
     }
 }

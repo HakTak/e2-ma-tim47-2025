@@ -136,6 +136,7 @@ public class UserRepository {
         // Badges i Equipment
         user.setBadges((List<String>) snapshot.get("badges"));
         user.setEquipment((List<String>) snapshot.get("equipment"));
+        user.setOneSignalPlayerId(snapshot.getString("oneSignalPlayerId"));
 
         return user;
     }
