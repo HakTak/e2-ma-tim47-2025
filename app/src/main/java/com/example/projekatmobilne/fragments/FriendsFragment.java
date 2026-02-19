@@ -239,7 +239,6 @@ public class FriendsFragment extends Fragment {
             @Override
             public void onUsersLoaded(List<User> users) {
                 if (!isAdded()) return;
-                // Filtriraj sebe
                 users.removeIf(u -> u.getId().equals(currentUserId));
 
                 if (users.isEmpty()) {
@@ -248,8 +247,7 @@ public class FriendsFragment extends Fragment {
                     searchAdapter.updateFriends(new ArrayList<>());
                 } else {
                     tvSearchEmpty.setVisibility(View.GONE);
-                    // Promeni label dugmeta za search rezultate u "Dodaj prijatelja"
-                    searchAdapter.setShowInviteButton(true); // koristimo btnProfile kao "Add Friend"
+                    searchAdapter.setShowInviteButton(true);
                     searchAdapter.updateFriends(users);
                 }
             }
@@ -385,15 +383,30 @@ public class FriendsFragment extends Fragment {
                 if (users.isEmpty()) {
                     tvFriendsEmpty.setVisibility(View.VISIBLE);
                     rvFriends.setVisibility(View.GONE);
-                } else {
-                    tvFriendsEmpty.setVisibility(View.GONE);
-                    rvFriends.setVisibility(View.VISIBLE);
-                    // Prikaži dugme za pozivanje u savez samo ako je korisnik vođa saveza
-                    boolean isLeader = currentAlliance != null
-                            && currentAlliance.getLeaderId().equals(currentUserId);
-                    friendAdapter.setShowInviteButton(isLeader);
-                    friendAdapter.updateFriends(users);
+                    return;
                 }
+
+                tvFriendsEmpty.setVisibility(View.GONE);
+                rvFriends.setVisibility(View.VISIBLE);
+
+                boolean isLeader = currentAlliance != null
+                        && currentAlliance.getLeaderId().equals(currentUserId);
+
+                if (!isLeader || currentAlliance == null) {
+                    // Nije vođa - sakrij dugme za sve
+                    List<Boolean> noButtons = new ArrayList<>();
+                    for (User u : users) noButtons.add(false);
+                    friendAdapter.updateFriendsWithStatus(users, noButtons);
+                    return;
+                }
+
+                // Vođa je - prikaži dugme samo za prijatelje koji NISU u savezu
+                List<String> memberIds = currentAlliance.getMemberIds();
+                List<Boolean> showButtons = new ArrayList<>();
+                for (User u : users) {
+                    showButtons.add(!memberIds.contains(u.getId()));
+                }
+                friendAdapter.updateFriendsWithStatus(users, showButtons);
             }
 
             @Override
@@ -414,18 +427,6 @@ public class FriendsFragment extends Fragment {
                         } else {
                             sectionAllianceInvitations.setVisibility(View.VISIBLE);
                             invitationAdapter.updateInvitations(invitations);
-
-                            // Prikaži persistent notifikaciju za svaku pozivnicu
-                            for (AllianceInvitation inv : invitations) {
-                                AllianceNotificationHelper.showAllianceInvitationNotification(
-                                        requireContext(),
-                                        inv.getId(),
-                                        inv.getAllianceId(),
-                                        inv.getAllianceName(),
-                                        inv.getFromUsername(),
-                                        inv.getFromUserId()
-                                );
-                            }
                         }
                     }
 

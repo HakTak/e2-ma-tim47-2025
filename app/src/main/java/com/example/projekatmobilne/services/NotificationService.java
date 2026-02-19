@@ -100,8 +100,7 @@ public class NotificationService {
             notification.put("data", new JSONObject(data));
 
             // Android notification channel
-            notification.put("android_channel_id", "habit_rpg_channel");
-
+//            notification.put("android_channel_id", "habit_rpg_channel");
             // HTTP POST request
             RequestBody body = RequestBody.create(
                     notification.toString(),
