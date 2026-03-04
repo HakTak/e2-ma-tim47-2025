@@ -116,13 +116,13 @@
         </LinearLayout>
 
         <!-- ===== TEST DUGME (OBRISATI POSLE TESTIRANJA) ===== -->
-        <Button
-            android:id="@+id/btnAddTestXP"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="[TEST] Dodaj 50 XP"
-            android:backgroundTint="@color/warning_orange"
-            android:layout_marginTop="16dp" />
+<!--        <Button-->
+<!--            android:id="@+id/btnAddTestXP"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="[TEST] Dodaj 50 XP"-->
+<!--            android:backgroundTint="@color/warning_orange"-->
+<!--            android:layout_marginTop="16dp" />-->
 
     </LinearLayout>
 </ScrollView>

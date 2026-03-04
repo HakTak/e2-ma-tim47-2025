@@ -80,7 +80,7 @@
                 android:layout_gravity="center" />
         </LinearLayout>
 
-        <!-- ===== CARD 3: XP U POSLEDNJIH 7 DANA (LINE CHART) ===== -->
+        <!-- ===== CARD 3: XP U POSLEDNJIH 7 DANA ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -130,7 +130,7 @@
                 android:layout_height="300dp" />
         </LinearLayout>
 
-        <!-- ===== CARD 5: ZADACI PO KATEGORIJI (BAR CHART - PLACEHOLDER) ===== -->
+        <!-- ===== CARD 5: ZADACI PO KATEGORIJI (BAR CHART) ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -150,16 +150,17 @@
                 android:layout_marginBottom="12dp" />
 
             <TextView
+                android:id="@+id/tvCategoryPlaceholder"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Dostupno kad implementiraš zadatke i kategorije"
+                android:text="Nema kategorija za prikaz"
                 android:textSize="14sp"
                 android:textColor="@color/text_hint"
                 android:textStyle="italic"
                 android:layout_gravity="center"
-                android:padding="32dp" />
+                android:padding="32dp"
+                android:visibility="gone" />
 
-            <!-- Bar chart će biti ovde kasnije -->
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartCategories"
                 android:layout_width="match_parent"
@@ -167,7 +168,7 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-        <!-- ===== CARD 6: PROSEČNA TEŽINA (LINE CHART - PLACEHOLDER) ===== -->
+        <!-- ===== CARD 6: PROSEČNA TEŽINA (LINE CHART) ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -187,14 +188,33 @@
                 android:layout_marginBottom="12dp" />
 
             <TextView
+                android:id="@+id/tvDifficultyPlaceholder"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Dostupno kad implementiraš zadatke"
+                android:text="Nema završenih zadataka za prikaz"
                 android:textSize="14sp"
                 android:textColor="@color/text_hint"
                 android:textStyle="italic"
                 android:layout_gravity="center"
-                android:padding="32dp" />
+                android:padding="32dp"
+                android:visibility="gone" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/lineChartDifficulty"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvDifficultyLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textStyle="italic"
+                android:textColor="@color/text_secondary"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"/>
         </LinearLayout>
 
         <!-- ===== CARD 7: SPECIJALNE MISIJE ===== -->

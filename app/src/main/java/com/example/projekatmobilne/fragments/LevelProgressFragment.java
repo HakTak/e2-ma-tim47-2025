@@ -32,7 +32,7 @@ public class LevelProgressFragment extends Fragment {
     private TextView tvXPProgress;
     private TextView tvNextLevelInfo;
     private ProgressBar progressBarXP;
-    private Button btnAddTestXP;
+//    private Button btnAddTestXP;
 
     private UserViewModel userViewModel;
     private BossViewModel bossViewModel;
@@ -53,12 +53,12 @@ public class LevelProgressFragment extends Fragment {
         tvXPProgress     = view.findViewById(R.id.tvXPProgress);
         tvNextLevelInfo  = view.findViewById(R.id.tvNextLevelInfo);
         progressBarXP    = view.findViewById(R.id.progressBarXP);
-        btnAddTestXP     = view.findViewById(R.id.btnAddTestXP);
+//        btnAddTestXP     = view.findViewById(R.id.btnAddTestXP);
 
         // Initialize services
         prefsManager  = new SharedPrefsManager(requireContext());
         levelService  = new LevelService();
-        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
         bossViewModel = new ViewModelProvider(this).get(BossViewModel.class);
 
         // Učitaj korisnika
@@ -78,12 +78,12 @@ public class LevelProgressFragment extends Fragment {
         });
 
         // ===== TEST DUGME (obrisati kad kolega implementira zadatke) =====
-        btnAddTestXP.setOnClickListener(v -> {
-            String uid = prefsManager.getUserId();
-            if (uid != null) {
-                userViewModel.addXP(uid, 50);
-            }
-        });
+//        btnAddTestXP.setOnClickListener(v -> {
+//            String uid = prefsManager.getUserId();
+//            if (uid != null) {
+//                userViewModel.addXP(uid, 50);
+//            }
+//        });
 
         return view;
     }
@@ -120,19 +120,7 @@ public class LevelProgressFragment extends Fragment {
         if (getContext() == null) return;
 
         // Kreiraj bossa za novi level u pozadini
-        bossViewModel.ensureBossExistsForLevel(newLevel, new BossViewModel.BossReadyCallback() {
-            @Override
-            public void onReady(com.example.projekatmobilne.models.Boss boss) {
-                Log.d(TAG, "Boss kreiran za level " + newLevel
-                        + " | HP: " + boss.getMaxHp()
-                        + " | Coins: " + boss.getCoins());
-            }
 
-            @Override
-            public void onError(String error) {
-                Log.e(TAG, "Greška pri kreiranju bossa: " + error);
-            }
-        });
 
         // Prikaži dialog
         View dialogView = LayoutInflater.from(requireContext())

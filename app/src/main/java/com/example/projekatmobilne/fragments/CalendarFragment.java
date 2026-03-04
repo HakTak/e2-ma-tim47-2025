@@ -56,6 +56,20 @@ public class CalendarFragment extends Fragment {
         rvTasks.setLayoutManager(new LinearLayoutManager(getContext()));
 
         taskViewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
+
+        // Nakon inicijalizacije viewModels-a u onCreateView()
+        com.example.projekatmobilne.viewModels.UserViewModel userViewModel =
+                new ViewModelProvider(requireActivity()).get(com.example.projekatmobilne.viewModels.UserViewModel.class);
+
+        userViewModel.levelUpEvent.observe(getViewLifecycleOwner(), event -> {
+            if (event != null) {
+                com.example.projekatmobilne.viewModels.BossViewModel bossViewModel =
+                        new ViewModelProvider(requireActivity()).get(com.example.projekatmobilne.viewModels.BossViewModel.class);
+
+                userViewModel.levelUpEvent.setValue(null);
+            }
+        });
+
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
         taskService = new TaskService();
 

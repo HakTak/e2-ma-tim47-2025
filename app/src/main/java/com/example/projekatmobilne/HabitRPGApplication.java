@@ -25,7 +25,11 @@ public class HabitRPGApplication extends Application {
 
         // OneSignal inicijalizacija
         OneSignal.initWithContext(this, ONESIGNAL_APP_ID);
-
+        OneSignal.getNotifications().requestPermission(true, com.onesignal.Continue.with(r -> {
+            if (r.isSuccess()) {
+                Log.d("OneSignal", "Dozvola odobrena");
+            }
+        }));
         // ===== OBRISANO: requestPermission() - uzrokuje crash =====
         // OneSignal će automatski tražiti dozvolu kad mu treba
 

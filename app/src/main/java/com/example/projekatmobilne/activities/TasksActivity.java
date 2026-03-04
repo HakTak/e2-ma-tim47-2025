@@ -25,6 +25,7 @@ import com.example.projekatmobilne.services.TaskValidationService;
 import com.example.projekatmobilne.viewModels.BossViewModel;
 import com.example.projekatmobilne.viewModels.CategoryViewModel;
 import com.example.projekatmobilne.viewModels.TaskViewModel;
+import com.example.projekatmobilne.viewModels.UserViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class TasksActivity extends AppCompatActivity {
     private TaskViewModel taskViewModel;
     private TaskService taskService;
     private TaskValidationService validationService;
-
+    private UserViewModel userViewModel;
     private String categoryId;
     private List<Task> masterTaskList = new ArrayList<>();
     private int currentFilterMode = 0; // 0: Svi, 1: Jednokratni, 2: Ponavljajući
@@ -73,6 +74,7 @@ public class TasksActivity extends AppCompatActivity {
         taskViewModel   = new ViewModelProvider(this).get(TaskViewModel.class);
         taskService      = new TaskService();
         validationService = new TaskValidationService();
+        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
 
         // 2. Setup RecyclerView
         RecyclerView rv = findViewById(R.id.recyclerViewTasks);
@@ -121,6 +123,16 @@ public class TasksActivity extends AppCompatActivity {
         CategoryViewModel categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
         categoryViewModel.getAllCategories().observe(this, cats -> {
             if (cats != null) adapter.setCategories(cats);
+        });
+
+        //7.viewModel
+        // U onCreate() nakon inicijalizacije userViewModel-a
+        userViewModel.levelUpEvent.observe(this, event -> {
+            if (event != null) {
+                BossViewModel bossViewModel = new ViewModelProvider(this).get(BossViewModel.class);
+
+                userViewModel.levelUpEvent.setValue(null);
+            }
         });
     }
 

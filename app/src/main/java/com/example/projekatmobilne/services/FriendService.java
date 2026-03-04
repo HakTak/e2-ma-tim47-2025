@@ -518,6 +518,58 @@ public class FriendService {
             }
         });
     }
+    public void checkFriendshipStatus(String currentUserId, String targetUserId, FriendStatusCallback callback) {
+        // Provjeri da li su prijatelji
+        friendRepository.areFriends(currentUserId, targetUserId, new FriendRepository.CheckFriendshipCallback() {
+            @Override
+            public void onResult(boolean areFriends) {
+                if (areFriends) {
+                    callback.onStatus(FriendStatus.FRIENDS);
+                    return;
+                }
+                // Provjeri pending request (poslat)
+                db.collection("friendRequests")
+                        .whereEqualTo("fromUserId", currentUserId)
+                        .whereEqualTo("toUserId", targetUserId)
+                        .whereEqualTo("status", "pending")
+                        .get()
+                        .addOnSuccessListener(snap1 -> {
+                            if (!snap1.isEmpty()) {
+                                callback.onStatus(FriendStatus.REQUEST_SENT);
+                                return;
+                            }
+                            // Provjeri pending request (primljen)
+                            db.collection("friendRequests")
+                                    .whereEqualTo("fromUserId", targetUserId)
+                                    .whereEqualTo("toUserId", currentUserId)
+                                    .whereEqualTo("status", "pending")
+                                    .get()
+                                    .addOnSuccessListener(snap2 -> {
+                                        if (!snap2.isEmpty()) {
+                                            callback.onStatus(FriendStatus.REQUEST_RECEIVED);
+                                        } else {
+                                            callback.onStatus(FriendStatus.NONE);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> callback.onStatus(FriendStatus.NONE));
+                        })
+                        .addOnFailureListener(e -> callback.onStatus(FriendStatus.NONE));
+            }
+
+            @Override
+            public void onError(String error) {
+                callback.onStatus(FriendStatus.NONE);
+            }
+        });
+    }
+
+    public enum FriendStatus {
+        NONE, FRIENDS, REQUEST_SENT, REQUEST_RECEIVED
+    }
+
+    public interface FriendStatusCallback {
+        void onStatus(FriendStatus status);
+    }
 
     // ============ CALLBACKS ============
 

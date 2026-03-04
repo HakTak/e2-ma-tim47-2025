@@ -164,14 +164,13 @@
                 android:textColor="@color/text_primary"
                 android:layout_marginBottom="12dp" />
 
-            <TextView
-                android:id="@+id/tvProfileEquipment"
-                android:layout_width="wrap_content"
+            <!-- Dinamički se popunjava iz koda -->
+            <LinearLayout
+                android:id="@+id/layoutEquipmentContainer"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Oprema dolazi uskoro..."
-                android:textSize="14sp"
-                android:textColor="@color/text_hint"
-                android:textStyle="italic" />
+                android:orientation="vertical" />
+
         </LinearLayout>
 
         <!-- DUGME ZA PROMENU LOZINKE -->

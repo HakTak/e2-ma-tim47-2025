@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.projekatmobilne.R;
 import com.example.projekatmobilne.models.User;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.FriendViewHolder> {
@@ -25,7 +26,14 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.FriendView
     private List<User> friends;
     private final FriendListener listener;
     private boolean showInviteButton = false;
+    private List<Boolean> showAddButtons = new ArrayList<>();
 
+    // Nova metoda za update sa per-user statusom
+    public void updateFriendsWithStatus(List<User> newFriends, List<Boolean> addButtonVisible) {
+        this.friends = newFriends;
+        this.showAddButtons = addButtonVisible;
+        notifyDataSetChanged();
+    }
     public FriendAdapter(List<User> friends, FriendListener listener) {
         this.friends = friends;
         this.listener = listener;
@@ -80,12 +88,16 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.FriendView
             tvLevel.setText("Nivo " + user.getLevel());
             tvTitle.setText(user.getTitle() != null ? user.getTitle() : "");
 
-            // Avatar
             setAvatar(imgAvatar, user.getAvatar());
-
             btnProfile.setOnClickListener(v -> listener.onViewProfile(user));
 
-            if (showInviteButton) {
+            // SAMO OVO, ukloni stari showInviteButton blok iznad
+            int position = getAdapterPosition();
+            boolean showAdd = !showAddButtons.isEmpty() && position < showAddButtons.size()
+                    ? showAddButtons.get(position)
+                    : showInviteButton;
+
+            if (showAdd) {
                 btnInvite.setVisibility(View.VISIBLE);
                 btnInvite.setOnClickListener(v -> listener.onInviteToAlliance(user));
             } else {
